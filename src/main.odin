@@ -28,10 +28,14 @@ main :: proc() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.eprintln("Logs from your program will appear here!")
 
-	// TODO: Uncomment the code below to pass the first stage
-	if len(file_contents) > 0 {
-		panic("Scanner not implemented")
-	} else {
-		fmt.println("EOF  null") // Placeholder, replace this line when implementing the scanner
+	for char in file_contents {
+		switch char {
+		case '(':
+			fmt.println("LEFT_PAREN ( null")
+		case ')':
+			fmt.println("RIGHT_PAREN ) null")
+		}
 	}
+
+	fmt.println("EOF  null")
 }
