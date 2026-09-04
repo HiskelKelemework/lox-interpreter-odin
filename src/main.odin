@@ -1,5 +1,6 @@
 package main
 
+import "core:bytes"
 import "core:fmt"
 import "core:os"
 import "core:strings"
@@ -28,28 +29,39 @@ main :: proc() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.eprintln("Logs from your program will appear here!")
 
-	for char in file_contents {
-		switch char {
-		case '(':
-			fmt.println("LEFT_PAREN ( null")
-		case ')':
-			fmt.println("RIGHT_PAREN ) null")
-		case '}':
-			fmt.println("RIGHT_BRACE } null")
-		case '{':
-			fmt.println("LEFT_BRACE { null")
-		case ',':
-			fmt.println("COMMA , null")
-		case '.':
-			fmt.println("DOT . null")
-		case '-':
-			fmt.println("MINUS - null")
-		case '+':
-			fmt.println("PLUS + null")
-		case ';':
-			fmt.println("SEMICOLON ; null")
-		case '*':
-			fmt.println("STAR * null")
+	lines := bytes.split(file_contents, transmute([]byte)string("\n"))
+	// if error != nil {
+	// 	fmt.eprintln("encountered error while splitting", error)
+	// 	os.exit(1)
+	// }
+
+	for line, index in lines {
+		line_number := index + 1
+		for char in line {
+			switch char {
+			case '(':
+				fmt.println("LEFT_PAREN ( null")
+			case ')':
+				fmt.println("RIGHT_PAREN ) null")
+			case '}':
+				fmt.println("RIGHT_BRACE } null")
+			case '{':
+				fmt.println("LEFT_BRACE { null")
+			case ',':
+				fmt.println("COMMA , null")
+			case '.':
+				fmt.println("DOT . null")
+			case '-':
+				fmt.println("MINUS - null")
+			case '+':
+				fmt.println("PLUS + null")
+			case ';':
+				fmt.println("SEMICOLON ; null")
+			case '*':
+				fmt.println("STAR * null")
+			case '$', '#':
+				fmt.eprintfln("[line %d] Error: Unexpected character: %c", line_number, char)
+			}
 		}
 	}
 
