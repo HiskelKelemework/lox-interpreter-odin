@@ -38,6 +38,18 @@ main :: proc() {
 			fmt.println("RIGHT_BRACE } null")
 		case '{':
 			fmt.println("LEFT_BRACE { null")
+		case ',':
+			fmt.println("COMMA , null")
+		case '.':
+			fmt.println("DOT . null")
+		case '-':
+			fmt.println("MINUS - null")
+		case '+':
+			fmt.println("PLUS + null")
+		case ';':
+			fmt.println("SEMICOLON ; null")
+		case '*':
+			fmt.println("STAR * null")
 		}
 	}
 
