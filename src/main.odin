@@ -19,17 +19,24 @@ main :: proc() {
 		os.exit(1)
 	}
 
+	exit_code := 0
+
 	file_contents, err := os.read_entire_file(filename, context.allocator)
 	if err != nil {
 		fmt.eprintf("Failed to read file: %s\n", filename)
 		os.exit(1)
 	}
 
+	defer {
+		delete(file_contents, context.allocator)
+		// fmt.println("exiting with code", exit_code)
+		os.exit(exit_code)
+	}
+
 
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.eprintln("Logs from your program will appear here!")
 
-	exit_code := 0
 
 	lines := bytes.split(file_contents, transmute([]byte)string("\n"))
 
@@ -66,6 +73,4 @@ main :: proc() {
 
 	fmt.println("EOF  null")
 
-	delete(file_contents, context.allocator)
-	os.exit(exit_code)
 }
