@@ -6,8 +6,6 @@ import "core:os"
 import "core:strings"
 
 main :: proc() {
-	exit_code := 0
-
 	if len(os.args) < 3 {
 		fmt.eprintln("Usage: ./your_program.sh tokenize <filename>")
 		os.exit(1)
@@ -30,6 +28,8 @@ main :: proc() {
 
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.eprintln("Logs from your program will appear here!")
+
+	exit_code := 0
 
 	lines := bytes.split(file_contents, transmute([]byte)string("\n"))
 
