@@ -34,6 +34,10 @@ main :: proc() {
 			fmt.println("LEFT_PAREN ( null")
 		case ')':
 			fmt.println("RIGHT_PAREN ) null")
+		case '}':
+			fmt.println("RIGHT_BRACE } null")
+		case '{':
+			fmt.println("LEFT_BRACE { null")
 		}
 	}
 
