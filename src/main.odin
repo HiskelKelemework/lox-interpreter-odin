@@ -35,6 +35,8 @@ main :: proc() {
 	// 	os.exit(1)
 	// }
 
+	exit_code := 0
+
 	for line, index in lines {
 		line_number := index + 1
 		for char in line {
@@ -60,10 +62,12 @@ main :: proc() {
 			case '*':
 				fmt.println("STAR * null")
 			case '$', '#':
+				exit_code = 65
 				fmt.eprintfln("[line %d] Error: Unexpected character: %c", line_number, char)
 			}
 		}
 	}
 
 	fmt.println("EOF  null")
+	os.exit(exit_code)
 }
