@@ -27,16 +27,11 @@ main :: proc() {
 		os.exit(1)
 	}
 
-	defer {
-		delete(file_contents, context.allocator)
-		os.exit(exit_code)
-	}
 
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.eprintln("Logs from your program will appear here!")
 
 	lines := bytes.split(file_contents, transmute([]byte)string("\n"))
-	defer delete(lines)
 
 	for line, index in lines {
 		line_number := index + 1
@@ -70,4 +65,7 @@ main :: proc() {
 	}
 
 	fmt.println("EOF  null")
+
+	delete(file_contents, context.allocator)
+	os.exit(exit_code)
 }
