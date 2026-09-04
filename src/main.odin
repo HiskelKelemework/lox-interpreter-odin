@@ -6,6 +6,8 @@ import "core:os"
 import "core:strings"
 
 main :: proc() {
+	exit_code := 0
+
 	if len(os.args) < 3 {
 		fmt.eprintln("Usage: ./your_program.sh tokenize <filename>")
 		os.exit(1)
@@ -24,18 +26,17 @@ main :: proc() {
 		fmt.eprintf("Failed to read file: %s\n", filename)
 		os.exit(1)
 	}
-	defer delete(file_contents, context.allocator)
+
+	defer {
+		delete(file_contents, context.allocator)
+		os.exit(exit_code)
+	}
 
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.eprintln("Logs from your program will appear here!")
 
 	lines := bytes.split(file_contents, transmute([]byte)string("\n"))
-	// if error != nil {
-	// 	fmt.eprintln("encountered error while splitting", error)
-	// 	os.exit(1)
-	// }
-
-	exit_code := 0
+	defer delete(lines)
 
 	for line, index in lines {
 		line_number := index + 1
@@ -69,5 +70,4 @@ main :: proc() {
 	}
 
 	fmt.println("EOF  null")
-	os.exit(exit_code)
 }
