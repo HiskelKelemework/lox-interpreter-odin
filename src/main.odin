@@ -176,6 +176,9 @@ main :: proc() {
 			case '$', '#', '%':
 				exit_code = 65
 				fmt.eprintfln("[line %d] Error: Unexpected character: %c", line_number, char)
+			case:
+				// unsupported
+				exit_code = 65
 			}
 		}
 	}
