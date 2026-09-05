@@ -171,7 +171,9 @@ main :: proc() {
 				fmt.printfln("NUMBER %s %s", numeric_string, formatted)
 
 				i = new_i
-			case:
+			case ' ':
+				continue
+			case '$', '#', '@':
 				exit_code = 65
 				fmt.eprintfln("[line %d] Error: Unexpected character: %c", line_number, char)
 			}
