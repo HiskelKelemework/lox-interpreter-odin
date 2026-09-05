@@ -203,7 +203,8 @@ format_floating_point :: proc(numeric_string: string) -> string {
 		panic("parsing integer should not fail")
 	}
 
-	decimal_string := strings.trim_right(fmt.tprintf("%d", decimal_point), "0")
+	decimal_string :=
+		decimal_point == 0 ? "0" : strings.trim_right(fmt.tprintf("%d", decimal_point), "0")
 
 	return fmt.tprintf("%s.%s", parts[0], decimal_string)
 }
