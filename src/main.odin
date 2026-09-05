@@ -161,7 +161,7 @@ main :: proc() {
 						continue
 					}
 
-					new_i = j
+					new_i = j - 1
 					break
 				}
 
