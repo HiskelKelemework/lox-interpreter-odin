@@ -173,7 +173,7 @@ main :: proc() {
 				i = new_i
 			case ' ':
 				continue
-			case '$', '#', '@':
+			case '$', '#':
 				exit_code = 65
 				fmt.eprintfln("[line %d] Error: Unexpected character: %c", line_number, char)
 			}
