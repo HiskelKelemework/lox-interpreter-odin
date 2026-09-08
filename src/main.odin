@@ -178,7 +178,7 @@ main :: proc() {
 				j := i
 
 				for ; j < len(line); j += 1 {
-					if !is_alpha_or_underscore(line[j]) do break
+					if !is_alpha_numeric(line[j]) do break
 				}
 
 				identifier := string(line[i:j])
@@ -198,8 +198,13 @@ main :: proc() {
 }
 
 // we only allow small letters, capital letters, and underscore
-is_alpha_or_underscore :: proc(char: byte) -> bool {
-	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_'
+is_alpha_numeric :: proc(char: byte) -> bool {
+	is_numeric := char >= '0' && char <= '9'
+	is_small_letter := char >= 'a' && char <= 'z'
+	is_upper_case_letter := char >= 'A' && char <= 'Z'
+	is_underscore := char == '_'
+
+	return is_numeric || is_small_letter || is_upper_case_letter || is_underscore
 }
 
 format_floating_point :: proc(numeric_string: string) -> string {
