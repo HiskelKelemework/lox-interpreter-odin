@@ -6,6 +6,7 @@ import "core:os"
 import "core:strconv"
 import "core:strings"
 
+
 main :: proc() {
 	if len(os.args) < 3 {
 		fmt.eprintln("Usage: ./your_program.sh tokenize <filename>")
@@ -36,6 +37,26 @@ main :: proc() {
 
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.eprintln("Logs from your program will appear here!")
+
+	reserved_keywords := make(map[string]bool, 15)
+	defer delete(reserved_keywords)
+
+	reserved_keywords["and"] = true
+	reserved_keywords["class"] = true
+	reserved_keywords["else"] = true
+	reserved_keywords["false"] = true
+	reserved_keywords["for"] = true
+	reserved_keywords["fun"] = true
+	reserved_keywords["if"] = true
+	reserved_keywords["nil"] = true
+	reserved_keywords["or"] = true
+	reserved_keywords["print"] = true
+	reserved_keywords["return"] = true
+	reserved_keywords["super"] = true
+	reserved_keywords["this"] = true
+	reserved_keywords["true"] = true
+	reserved_keywords["var"] = true
+	reserved_keywords["while"] = true
 
 	lines := bytes.split(file_contents, transmute([]byte)string("\n"))
 
@@ -182,7 +203,14 @@ main :: proc() {
 				}
 
 				identifier := string(line[i:j])
-				fmt.printfln("IDENTIFIER %s null", identifier)
+
+				is_reserved_keyword := reserved_keywords[identifier] or_else false
+				if is_reserved_keyword {
+					fmt.printfln("%s %s null", strings.to_upper(identifier), identifier)
+				} else {
+					fmt.printfln("IDENTIFIER %s null", identifier)
+				}
+
 				i = j - 1
 			case '$', '#', '@', '%':
 				exit_code = 65
