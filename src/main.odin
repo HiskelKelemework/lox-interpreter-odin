@@ -173,6 +173,17 @@ main :: proc() {
 				i = new_i
 			case ' ':
 				continue
+			case 'a' ..= 'z', 'A' ..= 'Z', '_':
+				// forward until we find a non alpha, underscore char
+				j := i
+
+				for ; j < len(line); j += 1 {
+					if !is_alpha_or_underscore(line[j]) do break
+				}
+
+				identifier := string(line[i:j])
+				fmt.printfln("IDENTIFIER %s null", identifier)
+				i = j - 1
 			case '$', '#', '@', '%':
 				exit_code = 65
 				fmt.eprintfln("[line %d] Error: Unexpected character: %c", line_number, char)
@@ -184,6 +195,11 @@ main :: proc() {
 	}
 
 	fmt.println("EOF  null")
+}
+
+// we only allow small letters, capital letters, and underscore
+is_alpha_or_underscore :: proc(char: byte) -> bool {
+	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_'
 }
 
 format_floating_point :: proc(numeric_string: string) -> string {
