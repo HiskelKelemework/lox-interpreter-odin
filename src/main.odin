@@ -6,7 +6,6 @@ import "core:os"
 import "core:strconv"
 import "core:strings"
 
-
 main :: proc() {
 	if len(os.args) < 3 {
 		fmt.eprintln("Usage: ./your_program.sh tokenize <filename>")
@@ -38,7 +37,7 @@ main :: proc() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.eprintln("Logs from your program will appear here!")
 
-	reserved_keywords := make(map[string]bool, 15)
+	reserved_keywords := make(map[string]bool, 16)
 	defer delete(reserved_keywords)
 
 	reserved_keywords["and"] = true
@@ -147,51 +146,14 @@ main :: proc() {
 
 				i = j
 			case '0' ..= '9':
-				j := i
-				new_i := i
+				end_index := parse_number(line, i)
 
-				found_dot := false
-				digit_after_dot := false
-
-				for ; j < len(line); j += 1 {
-					current := line[j]
-
-					if current >= '0' && current <= '9' {
-						if found_dot {
-							digit_after_dot = true
-						}
-
-						new_i = j
-						continue
-					}
-
-					if current == '.' {
-						if found_dot && digit_after_dot {
-							new_i = j - 1
-							// print after breaking
-							break
-						}
-
-						if found_dot {
-							new_i = j - 2
-							// print after breaking
-							break
-						}
-
-						found_dot = true
-						continue
-					}
-
-					new_i = j - 1
-					break
-				}
-
-				numeric_string := string(line[i:j])
+				numeric_string := string(line[i:end_index + 1])
 				formatted := format_floating_point(numeric_string)
 
 				fmt.printfln("NUMBER %s %s", numeric_string, formatted)
 
-				i = new_i
+				i = end_index
 			case ' ':
 				continue
 			case 'a' ..= 'z', 'A' ..= 'Z', '_':
@@ -241,6 +203,8 @@ format_floating_point :: proc(numeric_string: string) -> string {
 		panic("should never happen ")
 	}
 
+	defer delete(parts)
+
 	if len(parts) > 2 {
 		panic("should never receive this, more than two parts to a floating point number")
 	}
@@ -256,4 +220,48 @@ format_floating_point :: proc(numeric_string: string) -> string {
 		decimal_point == 0 ? "0" : strings.trim_right(fmt.tprintf("%d", decimal_point), "0")
 
 	return fmt.tprintf("%s.%s", parts[0], decimal_string)
+}
+
+ParseNumberState :: enum {
+	NUMBER_BEFORE_DOT,
+	DOT,
+	NUMBER_AFTER_DOT,
+}
+
+parse_number :: proc(line: []byte, current_index: int) -> (end_index: int) {
+	assert(is_numeric(line[current_index]), "first character is not numeric")
+
+	state := ParseNumberState.NUMBER_BEFORE_DOT
+	j := current_index
+
+	main_loop: for ; j < len(line); j += 1 {
+		char := line[j]
+
+		is_numeric := is_numeric(char)
+		is_dot := char == '.'
+		is_invalid := !is_numeric && !is_dot
+
+		if is_invalid do break main_loop
+
+		switch state {
+		case .NUMBER_BEFORE_DOT:
+			if is_dot do state = .DOT
+		case .DOT:
+			if is_numeric do state = .NUMBER_AFTER_DOT
+			if is_dot {
+				// we encountered two dots in a row. we must de-consume the dot we just processed so it can be picked up again by the top level state machine
+				j -= 1
+				break main_loop
+			}
+		case .NUMBER_AFTER_DOT:
+			if !is_numeric do break main_loop
+		}
+	}
+
+	// whatever index we stopped at, didn't meet the number parsing criteria. therefore the number ended one index back
+	return j - 1
+}
+
+is_numeric :: proc(char: byte) -> bool {
+	return char >= '0' && char <= '9'
 }

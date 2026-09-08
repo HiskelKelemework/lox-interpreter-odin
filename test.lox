@@ -1,3 +1,7 @@
-if ("hello" == 15) {
-  return true
+fun is_integer(param1) {
+  if (param1 <= "0" and param1 <= "9") {
+    return true
+  }
+
+  return false
 }
