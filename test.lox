@@ -1,7 +1,11 @@
-fun is_integer(param1) {
-  if (param1 <= "0" and param1 <= "9") {
-    return true
+"123.123....
+
+fun is_digit(value) {
+  for char in value {
+    if value < "0" or value > "9" {
+      return false
+    }
   }
 
-  return false
+  return true
 }
