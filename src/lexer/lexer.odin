@@ -197,7 +197,11 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 			case '$', '#', '@', '%':
 				append_elem(
 					&errors,
-					fmt.tprintf("[line %d] Error: Unexpected character: %c", line_number, char),
+					fmt.tprintf(
+						"[line %d] Error: Unexpected character: %s",
+						line_number,
+						char == '%' ? "%%" : fmt.tprintf("%c", char),
+					),
 				)
 			}
 		}

@@ -1,11 +1,1 @@
-"123.123....
-
-fun is_digit(value) {
-  for char in value {
-    if value < "0" or value > "9" {
-      return false
-    }
-  }
-
-  return true
-}
+{(===%#@)}
