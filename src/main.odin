@@ -42,7 +42,7 @@ main :: proc() {
 	if len(errors) > 0 {
 		exit_code = 65
 		for error in errors {
-			fmt.println(error)
+			fmt.eprintfln(error)
 		}
 	}
 
