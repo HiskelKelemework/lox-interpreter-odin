@@ -193,7 +193,7 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 					fmt.tprintf(
 						"[line %d] Error: Unexpected character: %s",
 						line_number,
-						char == '%' ? "%%" : fmt.tprintf("%c", char), // % is a formatter parameter. hence the shenanigan
+						char == '%' ? "%" : fmt.tprintf("%c", char), // % is a formatter parameter. hence the shenanigan
 					),
 				)
 			}
