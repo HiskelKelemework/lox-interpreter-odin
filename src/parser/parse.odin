@@ -11,45 +11,87 @@ LiteralType :: enum {
 	STRING,
 }
 
-Literal :: struct {
+Literal_Expr :: struct {
 	type:  LiteralType,
 	value: string,
 }
 
-Expression :: union {
+Grouping_Expr :: struct {
+	value: ^Expr,
+}
+
+Expression_Kind :: enum {
 	Literal,
+	Grouping,
+}
+
+Expression_value :: union {
+	Literal_Expr,
+	Grouping_Expr,
+}
+
+Expr :: struct {
+	kind:  Expression_Kind,
+	value: Expression_value,
 }
 
 parse :: proc(tokens: []lexer.Token) {
-	for token in tokens {
-		if token.type == .EOF do break
+	iterator := TokenIterator{tokens, 0}
 
-		parsed := parse_literal(token)
-		print_ast(parsed)
-	}
+	expr := parse_primary(&iterator)
+	print_ast(expr)
 }
 
-parse_literal :: proc(token: lexer.Token) -> Expression {
+parse_primary :: proc(iter: ^TokenIterator) -> Expr {
+	token := current(iter^)
+	consume(iter)
+
 	#partial switch token.type {
 	case .TRUE:
-		return Literal{.TRUE, "true"}
+		return Expr{.Literal, Literal_Expr{.TRUE, "true"}}
 	case .FALSE:
-		return Literal{.FALSE, "false"}
+		return Expr{.Literal, Literal_Expr{.FALSE, "false"}}
 	case .NIL:
-		return Literal{.NIL, "nil"}
+		return Expr{.Literal, Literal_Expr{.NIL, "nil"}}
 	case .NUMBER:
-		return Literal{.NUMBER, token.value.?}
+		return Expr{.Literal, Literal_Expr{.NUMBER, token.value.?}}
 	case .STRING:
-		return Literal{.STRING, token.value.?}
+		return Expr{.Literal, Literal_Expr{.STRING, token.value.?}}
+	case .LEFT_PAREN:
+		// consume current token, parse the rest as primary again and expect a closing parenthesis
+		nested := parse_primary(iter)
+
+		closing := current(iter^)
+		if closing.type != .RIGHT_PAREN {
+			panic("unmatched closing parenthesis")
+		}
+
+		clone, error := new_clone(nested)
+		if error != nil {
+			panic("this should never happen")
+		}
+
+		return Expr{.Grouping, Grouping_Expr{value = clone}}
 	}
 
 	panic("not a literal, can't be parsed")
 }
 
-
-print_ast :: proc(expression: Expression) {
-	switch v in expression {
-	case Literal:
-		fmt.println(v.value)
+print_ast :: proc(expression: Expr) {
+	switch v in expression.value {
+	case Literal_Expr:
+		print_literal(v)
+	case Grouping_Expr:
+		print_group(v)
 	}
+}
+
+print_literal :: proc(literal: Literal_Expr) {
+	fmt.print(literal.value)
+}
+
+print_group :: proc(group: Grouping_Expr) {
+	fmt.print("(group ")
+	print_ast(group.value^)
+	fmt.print(")")
 }
