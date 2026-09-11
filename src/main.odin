@@ -74,5 +74,13 @@ handle_parse :: proc(filename: string) {
 		delete(errors)
 	}
 
+	if len(errors) > 0 {
+		for error in errors {
+			fmt.eprintln(error)
+		}
+
+		os.exit(65)
+	}
+
 	parser.parse(tokens[:])
 }
