@@ -39,6 +39,8 @@ parse_literal :: proc(token: lexer.Token) -> Expression {
 		return Literal{.NIL, "nil"}
 	case .NUMBER:
 		return Literal{.NUMBER, token.value.?}
+	case .STRING:
+		return Literal{.STRING, token.value.?}
 	}
 
 	panic("not a literal, can't be parsed")
