@@ -61,9 +61,7 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 	tokens = make([dynamic]Token)
 	errors = make([dynamic]string)
 
-	reserved_keywords := build_reserved_keywords()
 	reserved_keywords_enum_map := build_reserved_keywords_enum_map()
-	defer delete(reserved_keywords)
 	defer delete(reserved_keywords_enum_map)
 
 	lines := bytes.split(source_code, transmute([]byte)string("\n"))
@@ -181,14 +179,9 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 
 				identifier := string(line[i:j])
 
-				is_reserved_keyword := reserved_keywords[identifier] or_else false
-				if is_reserved_keyword {
-					value, ok := reserved_keywords_enum_map[identifier]
-					if !ok {
-						panic("looking up the enum value of a reserved keyword should never fail")
-					}
-
-					append_elem(&tokens, Token{value, line_number, identifier, nil})
+				keyword_enum, is_keyword := reserved_keywords_enum_map[identifier]
+				if is_keyword {
+					append_elem(&tokens, Token{keyword_enum, line_number, identifier, nil})
 				} else {
 					append_elem(&tokens, Token{.IDENTIFIER, line_number, identifier, nil})
 				}
@@ -200,7 +193,7 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 					fmt.tprintf(
 						"[line %d] Error: Unexpected character: %s",
 						line_number,
-						char == '%' ? "%%" : fmt.tprintf("%c", char),
+						char == '%' ? "%%" : fmt.tprintf("%c", char), // % is a formatter parameter. hence the shenanigan
 					),
 				)
 			}
@@ -213,28 +206,6 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 	return
 }
 
-build_reserved_keywords :: proc() -> ReservedKeywords {
-	reserved_keywords := make(ReservedKeywords, 16)
-
-	reserved_keywords["and"] = true
-	reserved_keywords["class"] = true
-	reserved_keywords["else"] = true
-	reserved_keywords["false"] = true
-	reserved_keywords["for"] = true
-	reserved_keywords["fun"] = true
-	reserved_keywords["if"] = true
-	reserved_keywords["nil"] = true
-	reserved_keywords["or"] = true
-	reserved_keywords["print"] = true
-	reserved_keywords["return"] = true
-	reserved_keywords["super"] = true
-	reserved_keywords["this"] = true
-	reserved_keywords["true"] = true
-	reserved_keywords["var"] = true
-	reserved_keywords["while"] = true
-
-	return reserved_keywords
-}
 
 build_reserved_keywords_enum_map :: proc() -> ReservedKeywordsEnumMap {
 	reserved_keywords := make(ReservedKeywordsEnumMap, 16)
@@ -320,7 +291,9 @@ parse_number :: proc(line: []byte, current_index: int) -> (end_index: int) {
 		case .DOT:
 			if is_numeric do state = .NUMBER_AFTER_DOT
 			if is_dot {
-				// we encountered two dots in a row. we must de-consume the dot we just processed so it can be picked up again by the top level state machine
+				// we encountered two dots in a row.
+				// we must de-consume the dot we just processed so
+				// it can be picked up again by the top level state machine
 				j -= 1
 				break main_loop
 			}
@@ -339,10 +312,4 @@ is_numeric :: proc(char: byte) -> bool {
 
 print_token :: proc(token: Token) {
 	fmt.printfln("%s %s %s", token.type, token.lexeme, token.value == nil ? "null" : token.value.?)
-}
-
-resolve_reserved_keyword_enum :: proc(value: string) {
-	switch value {
-
-	}
 }

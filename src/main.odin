@@ -1,5 +1,6 @@
 package main
 
+import "./parser"
 import "core:fmt"
 import "core:os"
 
@@ -7,29 +8,38 @@ import "./lexer"
 
 main :: proc() {
 	if len(os.args) < 3 {
-		fmt.eprintln("Usage: ./your_program.sh tokenize <filename>")
+		fmt.eprintln("Usage: ./your_program.sh <command> <filename>")
 		os.exit(1)
 	}
 
 	command := os.args[1]
 	filename := os.args[2]
 
-	if command != "tokenize" {
-		fmt.eprintf("Unknown command: %s\n", command)
-		os.exit(1)
+	if command == "tokenize" {
+		handle_tokenize(filename)
+		return
 	}
 
-	exit_code := 0
+	if command == "parse" {
+		handle_parse(filename)
+		return
+	}
 
+	fmt.eprintf("Unknown command: %s\n", command)
+	os.exit(1)
+}
+
+handle_tokenize :: proc(filename: string) {
 	file_contents, err := os.read_entire_file(filename, context.allocator)
 	if err != nil {
 		fmt.eprintf("Failed to read file: %s\n", filename)
 		os.exit(1)
 	}
 
+	exit_code := 0
+
 	defer {
 		delete(file_contents, context.allocator)
-		// fmt.println("exiting with code", exit_code)
 		os.exit(exit_code)
 	}
 
@@ -42,11 +52,27 @@ main :: proc() {
 	if len(errors) > 0 {
 		exit_code = 65
 		for error in errors {
-			fmt.eprintfln(error)
+			fmt.eprintln(error)
 		}
 	}
 
 	for token in tokens {
 		lexer.print_token(token)
 	}
+}
+
+handle_parse :: proc(filename: string) {
+	file_contents, err := os.read_entire_file(filename, context.allocator)
+	if err != nil {
+		fmt.eprintf("Failed to read file: %s\n", filename)
+		os.exit(1)
+	}
+
+	tokens, errors := lexer.lex(file_contents)
+	defer {
+		delete(tokens)
+		delete(errors)
+	}
+
+	parser.parse(tokens[:])
 }
