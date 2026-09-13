@@ -25,16 +25,24 @@ Unary_Expr :: struct {
 	right:     ^Expr,
 }
 
+Binary_Expr :: struct {
+	left:      ^Expr,
+	operation: lexer.Token,
+	right:     ^Expr,
+}
+
 Expression_Kind :: enum {
 	Literal,
 	Grouping,
 	Unary,
+	Binary,
 }
 
 Expression_value :: union {
 	Literal_Expr,
 	Grouping_Expr,
 	Unary_Expr,
+	Binary_Expr,
 }
 
 Expr :: struct {
@@ -50,7 +58,29 @@ parse :: proc(tokens: []lexer.Token) {
 }
 
 parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {
-	return parse_unary(iter)
+	return parse_factor(iter)
+}
+
+// handle * and /
+parse_factor :: proc(iter: ^TokenIterator) -> ^Expr {
+	expr := parse_unary(iter)
+
+	for match(iter, .STAR, .SLASH) {
+		operator := consume(iter).?
+		right := parse_unary(iter)
+
+		binary_expr := new(Expr)
+		binary_expr.kind = .Binary
+		binary_expr.value = Binary_Expr {
+			left      = expr,
+			operation = operator,
+			right     = right,
+		}
+
+		expr = binary_expr
+	}
+
+	return expr
 }
 
 parse_unary :: proc(iter: ^TokenIterator) -> ^Expr {
@@ -103,6 +133,8 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 
 print_ast :: proc(expression: ^Expr) {
 	switch v in expression.value {
+	case Binary_Expr:
+		print_binary(v)
 	case Literal_Expr:
 		print_literal(v)
 	case Grouping_Expr:
@@ -127,5 +159,15 @@ print_unary :: proc(unary: Unary_Expr) {
 	fmt.print(unary.operation.lexeme)
 	fmt.print(" ")
 	print_ast(unary.right)
+	fmt.print(")")
+}
+
+print_binary :: proc(binary: Binary_Expr) {
+	fmt.print("(")
+	fmt.print(binary.operation.lexeme)
+	fmt.print(" ")
+	print_ast(binary.left)
+	fmt.print(" ")
+	print_ast(binary.right)
 	fmt.print(")")
 }
