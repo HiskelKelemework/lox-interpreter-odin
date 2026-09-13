@@ -42,42 +42,41 @@ parse :: proc(tokens: []lexer.Token) {
 	print_ast(expr)
 }
 
-parse_primary :: proc(iter: ^TokenIterator) -> Expr {
-	token := current(iter^)
+parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
+	token := current(iter)
 	consume(iter)
+
+	expr := new(Expr)
 
 	#partial switch token.type {
 	case .TRUE:
-		return Expr{.Literal, Literal_Expr{.TRUE, "true"}}
+		expr^ = Expr{.Literal, Literal_Expr{.TRUE, "true"}}
 	case .FALSE:
-		return Expr{.Literal, Literal_Expr{.FALSE, "false"}}
+		expr^ = Expr{.Literal, Literal_Expr{.FALSE, "false"}}
 	case .NIL:
-		return Expr{.Literal, Literal_Expr{.NIL, "nil"}}
+		expr^ = Expr{.Literal, Literal_Expr{.NIL, "nil"}}
 	case .NUMBER:
-		return Expr{.Literal, Literal_Expr{.NUMBER, token.value.?}}
+		expr^ = Expr{.Literal, Literal_Expr{.NUMBER, token.value.?}}
 	case .STRING:
-		return Expr{.Literal, Literal_Expr{.STRING, token.value.?}}
+		expr^ = Expr{.Literal, Literal_Expr{.STRING, token.value.?}}
 	case .LEFT_PAREN:
 		// consume current token, parse the rest as primary again and expect a closing parenthesis
 		nested := parse_primary(iter)
 
-		closing := current(iter^)
+		closing := current(iter)
 		if closing.type != .RIGHT_PAREN {
 			panic("unmatched closing parenthesis")
 		}
 
-		clone, error := new_clone(nested)
-		if error != nil {
-			panic("this should never happen")
-		}
-
-		return Expr{.Grouping, Grouping_Expr{value = clone}}
+		expr^ = Expr{.Grouping, Grouping_Expr{value = nested}}
+	case:
+		panic("not a literal, can't be parsed")
 	}
 
-	panic("not a literal, can't be parsed")
+	return expr
 }
 
-print_ast :: proc(expression: Expr) {
+print_ast :: proc(expression: ^Expr) {
 	switch v in expression.value {
 	case Literal_Expr:
 		print_literal(v)
@@ -92,6 +91,6 @@ print_literal :: proc(literal: Literal_Expr) {
 
 print_group :: proc(group: Grouping_Expr) {
 	fmt.print("(group ")
-	print_ast(group.value^)
+	print_ast(group.value)
 	fmt.print(")")
 }
