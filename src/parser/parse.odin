@@ -2,6 +2,7 @@ package parser
 
 import "../lexer"
 import "core:fmt"
+import "core:os"
 
 LiteralType :: enum {
 	TRUE,
@@ -193,8 +194,13 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 		consume(iter)
 		expr^ = Expr{.Grouping, Grouping_Expr{value = nested}}
 	case:
-		fmt.println("token is", token)
-		panic("not a literal, can't be parsed")
+		fmt.eprintfln(
+			"[line %d] Error at '%s': Expect expression.",
+			token.line_number,
+			token.lexeme,
+		)
+		os.exit(65)
+	// panic("not a literal, can't be parsed")
 	}
 
 	return expr
