@@ -54,6 +54,11 @@ parse :: proc(tokens: []lexer.Token) {
 	iterator := TokenIterator{tokens, 0}
 
 	expr := parse_expression(&iterator)
+
+	for current(&iterator).type != .EOF {
+
+	}
+
 	print_ast(expr)
 }
 
@@ -144,8 +149,10 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 			panic("unmatched closing parenthesis")
 		}
 
+		consume(iter)
 		expr^ = Expr{.Grouping, Grouping_Expr{value = nested}}
 	case:
+		fmt.println("token is", token)
 		panic("not a literal, can't be parsed")
 	}
 
