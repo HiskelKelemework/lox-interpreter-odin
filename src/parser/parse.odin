@@ -45,8 +45,12 @@ Expr :: struct {
 parse :: proc(tokens: []lexer.Token) {
 	iterator := TokenIterator{tokens, 0}
 
-	expr := parse_unary(&iterator)
+	expr := parse_expression(&iterator)
 	print_ast(expr)
+}
+
+parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {
+	return parse_unary(iter)
 }
 
 parse_unary :: proc(iter: ^TokenIterator) -> ^Expr {
@@ -82,7 +86,7 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 		expr^ = Expr{.Literal, Literal_Expr{.STRING, token.value.?}}
 	case .LEFT_PAREN:
 		// consume current token, parse the rest as primary again and expect a closing parenthesis
-		nested := parse_primary(iter)
+		nested := parse_expression(iter)
 
 		closing := current(iter)
 		if closing.type != .RIGHT_PAREN {
