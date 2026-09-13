@@ -69,7 +69,7 @@ parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {
 parse_equality :: proc(iter: ^TokenIterator) -> ^Expr {
 	expr := parse_comparison(iter)
 
-	for match(iter, .EQUAL_EQUAL) {
+	for match(iter, .BANG_EQUAL, .EQUAL_EQUAL) {
 		operator := consume(iter).?
 		right := parse_comparison(iter)
 
