@@ -63,9 +63,29 @@ parse :: proc(tokens: []lexer.Token) {
 }
 
 parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {
-	return parse_comparison(iter)
+	return parse_equality(iter)
 }
 
+parse_equality :: proc(iter: ^TokenIterator) -> ^Expr {
+	expr := parse_comparison(iter)
+
+	for match(iter, .EQUAL_EQUAL) {
+		operator := consume(iter).?
+		right := parse_comparison(iter)
+
+		binary_expr := new(Expr)
+		binary_expr.kind = .Binary
+		binary_expr.value = Binary_Expr {
+			left      = expr,
+			operation = operator,
+			right     = right,
+		}
+
+		expr = binary_expr
+	}
+
+	return expr
+}
 parse_comparison :: proc(iter: ^TokenIterator) -> ^Expr {
 	expr := parse_term(iter)
 
