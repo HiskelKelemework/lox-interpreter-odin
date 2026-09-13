@@ -20,14 +20,21 @@ Grouping_Expr :: struct {
 	value: ^Expr,
 }
 
+Unary_Expr :: struct {
+	operation: lexer.Token,
+	right:     ^Expr,
+}
+
 Expression_Kind :: enum {
 	Literal,
 	Grouping,
+	Unary,
 }
 
 Expression_value :: union {
 	Literal_Expr,
 	Grouping_Expr,
+	Unary_Expr,
 }
 
 Expr :: struct {
@@ -38,8 +45,22 @@ Expr :: struct {
 parse :: proc(tokens: []lexer.Token) {
 	iterator := TokenIterator{tokens, 0}
 
-	expr := parse_primary(&iterator)
+	expr := parse_unary(&iterator)
 	print_ast(expr)
+}
+
+parse_unary :: proc(iter: ^TokenIterator) -> ^Expr {
+	// need to match - and !
+	if !match(iter, .MINUS, .BANG) do return parse_primary(iter)
+
+	operation := consume(iter).?
+
+	right := parse_unary(iter)
+	expr := new(Expr)
+	expr.kind = .Unary
+	expr.value = Unary_Expr{operation, right}
+
+	return expr
 }
 
 parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
@@ -82,6 +103,8 @@ print_ast :: proc(expression: ^Expr) {
 		print_literal(v)
 	case Grouping_Expr:
 		print_group(v)
+	case Unary_Expr:
+		print_unary(v)
 	}
 }
 
@@ -92,5 +115,13 @@ print_literal :: proc(literal: Literal_Expr) {
 print_group :: proc(group: Grouping_Expr) {
 	fmt.print("(group ")
 	print_ast(group.value)
+	fmt.print(")")
+}
+
+print_unary :: proc(unary: Unary_Expr) {
+	fmt.print("(")
+	fmt.print(unary.operation.lexeme)
+	fmt.print(" ")
+	print_ast(unary.right)
 	fmt.print(")")
 }

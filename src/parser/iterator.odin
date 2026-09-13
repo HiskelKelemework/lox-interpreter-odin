@@ -31,3 +31,13 @@ previous :: proc(iterator: ^TokenIterator) -> Maybe(lexer.Token) {
 
 	return iterator.tokens[prev_index]
 }
+
+match :: proc(iter: ^TokenIterator, token_types: ..lexer.TokenType) -> bool {
+	current_token := current(iter)
+
+	for token_type in token_types {
+		if token_type == current_token.type do return true
+	}
+
+	return false
+}
