@@ -51,16 +51,9 @@ Expr :: struct {
 	value: Expression_value,
 }
 
-parse :: proc(tokens: []lexer.Token) {
+parse :: proc(tokens: []lexer.Token) -> ^Expr {
 	iterator := TokenIterator{tokens, 0}
-
-	expr := parse_expression(&iterator)
-
-	for current(&iterator).type != .EOF {
-
-	}
-
-	print_ast(expr)
+	return parse_expression(&iterator)
 }
 
 parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {
