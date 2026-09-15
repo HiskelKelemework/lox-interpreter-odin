@@ -16,6 +16,8 @@ interpret :: proc(expr: ^parser.Expr) -> (Literal_Value, bool) {
 	#partial switch &v in expr.value {
 	case parser.Literal_Expr:
 		return interpret_literal(&v)
+	case parser.Grouping_Expr:
+		return interpret(v.value)
 	case:
 		panic("unsupported expr type")
 	}
