@@ -120,5 +120,6 @@ handle_interpret :: proc(filename: string) {
 		os.exit(65)
 	}
 
+	fmt.println(typeid_of(type_of(result)))
 	fmt.println(result)
 }
