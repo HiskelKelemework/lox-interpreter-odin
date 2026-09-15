@@ -20,8 +20,32 @@ interpret :: proc(expr: ^parser.Expr) -> (Literal_Value, bool) {
 		return interpret(v.value)
 	case parser.Unary_Expr:
 		return interpret_unary(&v)
+	case parser.Binary_Expr:
+		return interpret_binary(&v)
 	case:
 		panic("unsupported expr type")
+	}
+}
+
+interpret_binary :: proc(expr: ^parser.Binary_Expr) -> (Literal_Value, bool) {
+	left, left_success := interpret(expr.left)
+	right, right_success := interpret(expr.right)
+
+	if !left_success || !right_success {
+		panic("left and right side interpreting failed")
+	}
+
+	#partial switch expr.operation.type {
+	case .STAR:
+		left_number := assert_number(left)
+		right_number := assert_number(right)
+		return left_number * right_number, true
+	case .SLASH:
+		left_number := assert_number(left)
+		right_number := assert_number(right)
+		return left_number / right_number, true
+	case:
+		panic("unimplemented binary operation")
 	}
 }
 
@@ -63,9 +87,10 @@ interpret_literal :: proc(expr: ^parser.Literal_Expr) -> (Literal_Value, bool) {
 	}
 }
 
-assert_number :: proc(value: Literal_Value) {
+assert_number :: proc(value: Literal_Value) -> f64 {
 	#partial switch v in value {
 	case f64:
+		return v
 	case:
 		panic("expected a number")
 	}
