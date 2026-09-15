@@ -44,6 +44,14 @@ interpret_binary :: proc(expr: ^parser.Binary_Expr) -> (Literal_Value, bool) {
 		left_number := assert_number(left)
 		right_number := assert_number(right)
 		return left_number / right_number, true
+	case .PLUS:
+		left_number := assert_number(left)
+		right_number := assert_number(right)
+		return left_number + right_number, true
+	case .MINUS:
+		left_number := assert_number(left)
+		right_number := assert_number(right)
+		return left_number - right_number, true
 	case:
 		panic("unimplemented binary operation")
 	}
