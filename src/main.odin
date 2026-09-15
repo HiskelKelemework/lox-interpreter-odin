@@ -3,9 +3,8 @@ package main
 import "./interpreter"
 import "./parser"
 import "core:fmt"
-import "core:math"
 import "core:os"
-import "core:strings"
+import "core:slice"
 
 import "./lexer"
 
@@ -18,26 +17,12 @@ main :: proc() {
 	command := os.args[1]
 	filename := os.args[2]
 
-	if command == "tokenize" {
-		handle_tokenize(filename)
-		return
+	allowed_commands := []string{"tokenize", "parse", "evaluate"}
+	if _, found := slice.linear_search(allowed_commands, command); !found {
+		fmt.eprintf("Unknown command: %s\n", command)
+		os.exit(1)
 	}
 
-	if command == "parse" {
-		handle_parse(filename)
-		return
-	}
-
-	if command == "evaluate" {
-		handle_interpret(filename)
-		return
-	}
-
-	fmt.eprintf("Unknown command: %s\n", command)
-	os.exit(1)
-}
-
-handle_tokenize :: proc(filename: string) {
 	file_contents, err := os.read_entire_file(filename, context.allocator)
 	if err != nil {
 		fmt.eprintf("Failed to read file: %s\n", filename)
@@ -64,9 +49,39 @@ handle_tokenize :: proc(filename: string) {
 		}
 	}
 
-	for token in tokens {
-		lexer.print_token(token)
+	// just print the tokens and exit
+	if command == "tokenize" {
+		for token in tokens {
+			lexer.print_token(token)
+		}
+
+		return
 	}
+
+
+	expr := parser.parse(tokens[:])
+
+	// print AST and exit
+	if command == "parse" {
+		parser.print_ast(expr)
+		return
+	}
+
+	result, runtime_error := interpreter.interpret(expr)
+	if runtime_error != nil {
+		fmt.println(runtime_error.(interpreter.Runtime_Error))
+		// NOTE: set error code here
+		return
+	}
+
+	if command == "evaluate" {
+		interpreter.stingify_value(result)
+		return
+	}
+}
+
+handle_tokenize :: proc(filename: string) {
+
 }
 
 handle_parse :: proc(filename: string) {
@@ -90,49 +105,4 @@ handle_parse :: proc(filename: string) {
 		os.exit(65)
 	}
 
-	expr := parser.parse(tokens[:])
-	parser.print_ast(expr)
-}
-
-handle_interpret :: proc(filename: string) {
-	file_contents, err := os.read_entire_file(filename, context.allocator)
-	if err != nil {
-		fmt.eprintf("Failed to read file: %s\n", filename)
-		os.exit(1)
-	}
-
-	tokens, errors := lexer.lex(file_contents)
-	defer {
-		delete(tokens)
-		delete(errors)
-	}
-
-	if len(errors) > 0 {
-		for error in errors {
-			fmt.eprintln(error)
-		}
-
-		os.exit(65)
-	}
-
-	expr := parser.parse(tokens[:])
-	result, success := interpreter.interpret(expr)
-	if !success {
-		fmt.eprintln("interpret error")
-		os.exit(65)
-	}
-
-	#partial switch v in result {
-	case f64:
-		int_version := int(v)
-		is_whole_number := f64(int_version) == v
-
-		if (is_whole_number) {
-			fmt.println(int_version)
-		} else {
-			fmt.println(strings.trim_right(fmt.tprintf("%.2f", v), "0"))
-		}
-	case:
-		fmt.println(result)
-	}
 }

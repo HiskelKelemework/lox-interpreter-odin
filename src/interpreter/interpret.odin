@@ -2,9 +2,11 @@
 
 package interpreter
 
+import "../lexer"
 import "../parser"
 import "core:fmt"
 import "core:strconv"
+import "core:strings"
 
 Literal_Value :: union {
 	bool,
@@ -12,7 +14,12 @@ Literal_Value :: union {
 	f64,
 }
 
-interpret :: proc(expr: ^parser.Expr) -> (Literal_Value, bool) {
+Runtime_Error :: struct {
+	line_number: int,
+	error:       string,
+}
+
+interpret :: proc(expr: ^parser.Expr) -> (Literal_Value, Maybe(Runtime_Error)) {
 	#partial switch &v in expr.value {
 	case parser.Literal_Expr:
 		return interpret_literal(&v)
@@ -27,98 +34,142 @@ interpret :: proc(expr: ^parser.Expr) -> (Literal_Value, bool) {
 	}
 }
 
-interpret_binary :: proc(expr: ^parser.Binary_Expr) -> (Literal_Value, bool) {
-	left, left_success := interpret(expr.left)
-	right, right_success := interpret(expr.right)
-
-	if !left_success || !right_success {
-		panic("left and right side interpreting failed")
-	}
+interpret_binary :: proc(
+	expr: ^parser.Binary_Expr,
+) -> (
+	result: Literal_Value,
+	runtime_error: Maybe(Runtime_Error),
+) {
+	left := interpret(expr.left) or_return
+	right := interpret(expr.right) or_return
 
 	#partial switch expr.operation.type {
 	case .STAR:
-		left_number := assert_number(left)
-		right_number := assert_number(right)
-		return left_number * right_number, true
+		assert_numeric_operands(expr.operation, left, right) or_return
+		return left.(f64) * right.(f64), nil
 	case .SLASH:
-		left_number := assert_number(left)
-		right_number := assert_number(right)
-		return left_number / right_number, true
+		assert_numeric_operands(expr.operation, left, right) or_return
+		return left.(f64) / right.(f64), nil
 	case .PLUS:
 		if left_string, ok := left.(string); ok {
 			if right_string, ok := right.(string); ok {
-				return fmt.tprintf("%s%s", left_string, right_string), true
+				return fmt.tprintf("%s%s", left_string, right_string), nil
 			}
 		}
 
-		left_number := assert_number(left)
-		right_number := assert_number(right)
-		return left_number + right_number, true
+		assert_numeric_operands(expr.operation, left, right) or_return
+		return left.(f64) + right.(f64), nil
 	case .MINUS:
-		left_number := assert_number(left)
-		right_number := assert_number(right)
-		return left_number - right_number, true
+		assert_numeric_operands(expr.operation, left, right) or_return
+		return left.(f64) - right.(f64), nil
 	case:
 		panic("unimplemented binary operation")
 	}
 }
 
-interpret_unary :: proc(expr: ^parser.Unary_Expr) -> (Literal_Value, bool) {
-	value, ok := interpret(expr.right)
-	if !ok do return false, false
+interpret_unary :: proc(
+	expr: ^parser.Unary_Expr,
+) -> (
+	result: Literal_Value,
+	runtime_error: Maybe(Runtime_Error),
+) {
+	value := interpret(expr.right) or_return
 
 	#partial switch expr.operation.type {
 	case .MINUS:
-		#partial switch v in value {
-		case f64:
-			return -1 * v, true
-		case:
-			panic("expected a number")
-		}
+		assert_numeric(expr.operation, value)
+		return value.(f64) * -1, nil
 	case .BANG:
-		truthy_value, success := get_truth_value(value)
-		if !success do panic("can't coerce value to boolean")
-		return !truthy_value, true
+		boolean_value := coerce_to_boolean(expr.operation, value) or_return
+		return !boolean_value, nil
 	case:
 		panic(fmt.tprintf("unrecognized unary operand %s", expr.operation.type))
 	}
 }
 
-interpret_literal :: proc(expr: ^parser.Literal_Expr) -> (Literal_Value, bool) {
+interpret_literal :: proc(expr: ^parser.Literal_Expr) -> (Literal_Value, Maybe(Runtime_Error)) {
 	switch expr.type {
 	case .TRUE:
-		return true, true
+		return true, nil
 	case .FALSE:
-		return false, true
+		return false, nil
 	case .NIL:
-		return nil, true
+		return nil, nil
 	case .NUMBER:
-		return strconv.parse_f64(expr.value)
+		parsed_number, ok := strconv.parse_f64(expr.value)
+		// NOTE: this should never happen. if it does, it means our lexer isn't working properly
+		if !ok do panic("should never happen: Could not parse number to f64")
+
+		return parsed_number, nil
 	case .STRING:
-		return expr.value, true
+		return expr.value, nil
 	case:
-		panic("unsupported literal")
+		panic(fmt.tprintf("unsupported literal %s", expr.type))
 	}
 }
 
-assert_number :: proc(value: Literal_Value) -> f64 {
-	#partial switch v in value {
-	case f64:
-		return v
-	case:
-		panic("expected a number")
+assert_numeric_operands :: proc(
+	operation: lexer.Token,
+	left, right: Literal_Value,
+) -> Maybe(Runtime_Error) {
+	_, left_numeric := left.(f64)
+	_, right_numeric := right.(f64)
+
+	if !left_numeric || !right_numeric {
+		return Runtime_Error {
+			line_number = operation.line_number,
+			error = "Expected numbers as operands",
+		}
 	}
+
+	return nil
 }
 
-get_truth_value :: proc(value: Literal_Value) -> (bool, bool) {
-	if value == nil do return false, true
+assert_numeric :: proc(operation: lexer.Token, left: Literal_Value) -> Maybe(Runtime_Error) {
+	if _, ok := left.(f64); !ok {
+		return Runtime_Error {
+			line_number = operation.line_number,
+			error = "Expected number on the right side",
+		}
+	}
+
+	return nil
+}
+
+coerce_to_boolean :: proc(
+	operation: lexer.Token,
+	value: Literal_Value,
+) -> (
+	bool,
+	Maybe(Runtime_Error),
+) {
+	if value == nil do return false, nil
 
 	#partial switch v in value {
 	case f64:
-		return true, true
+		return true, nil
 	case bool:
-		return v, true
+		return v, nil
 	case:
-		return false, false
+		return false, Runtime_Error {
+			line_number = operation.line_number,
+			error = "value can't be coerced to a boolean",
+		}
+	}
+}
+
+stingify_value :: proc(value: Literal_Value) {
+	#partial switch v in value {
+	case f64:
+		int_version := int(v)
+		is_whole_number := f64(int_version) == v
+
+		if (is_whole_number) {
+			fmt.println(int_version)
+		} else {
+			fmt.println(strings.trim_right(fmt.tprintf("%.2f", v), "0"))
+		}
+	case:
+		fmt.println(value)
 	}
 }
