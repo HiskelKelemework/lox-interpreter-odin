@@ -172,7 +172,7 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 	case .NIL:
 		expr^ = Expr{.Literal, Literal_Expr{.NIL, "nil"}}
 	case .NUMBER:
-		expr^ = Expr{.Literal, Literal_Expr{.NUMBER, token.value.?}}
+		expr^ = Expr{.Literal, Literal_Expr{.NUMBER, token.lexeme}}
 	case .STRING:
 		expr^ = Expr{.Literal, Literal_Expr{.STRING, token.value.?}}
 	case .LEFT_PAREN:
