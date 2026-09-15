@@ -124,7 +124,6 @@ handle_interpret :: proc(filename: string) {
 	case f64:
 		int_version := int(v)
 		is_whole_number := f64(int_version) == v
-		fmt.println("is whole number", is_whole_number)
 
 		if (is_whole_number) {
 			fmt.println(int_version)
@@ -132,7 +131,6 @@ handle_interpret :: proc(filename: string) {
 			fmt.println(v)
 		}
 	case:
-		fmt.println("default case")
 		fmt.println(result)
 	}
 }
