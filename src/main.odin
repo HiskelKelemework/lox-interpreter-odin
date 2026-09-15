@@ -3,6 +3,7 @@ package main
 import "./interpreter"
 import "./parser"
 import "core:fmt"
+import "core:math"
 import "core:os"
 
 import "./lexer"
@@ -128,7 +129,7 @@ handle_interpret :: proc(filename: string) {
 		if (is_whole_number) {
 			fmt.println(int_version)
 		} else {
-			fmt.println(v)
+			fmt.println(math.round(v))
 		}
 	case:
 		fmt.println(result)
