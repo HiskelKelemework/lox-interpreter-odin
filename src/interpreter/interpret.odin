@@ -45,6 +45,12 @@ interpret_binary :: proc(expr: ^parser.Binary_Expr) -> (Literal_Value, bool) {
 		right_number := assert_number(right)
 		return left_number / right_number, true
 	case .PLUS:
+		if left_string, ok := left.(string); ok {
+			if right_string, ok := right.(string); ok {
+				return fmt.tprintf("%s%s", left_string, right_string), true
+			}
+		}
+
 		left_number := assert_number(left)
 		right_number := assert_number(right)
 		return left_number + right_number, true
