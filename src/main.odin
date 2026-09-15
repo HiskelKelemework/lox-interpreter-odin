@@ -79,30 +79,3 @@ main :: proc() {
 		return
 	}
 }
-
-handle_tokenize :: proc(filename: string) {
-
-}
-
-handle_parse :: proc(filename: string) {
-	file_contents, err := os.read_entire_file(filename, context.allocator)
-	if err != nil {
-		fmt.eprintf("Failed to read file: %s\n", filename)
-		os.exit(1)
-	}
-
-	tokens, errors := lexer.lex(file_contents)
-	defer {
-		delete(tokens)
-		delete(errors)
-	}
-
-	if len(errors) > 0 {
-		for error in errors {
-			fmt.eprintln(error)
-		}
-
-		os.exit(65)
-	}
-
-}
