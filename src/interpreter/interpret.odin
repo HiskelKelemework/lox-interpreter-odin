@@ -24,7 +24,6 @@ interpret :: proc(expr: ^parser.Expr) -> (Literal_Value, bool) {
 interpret_literal :: proc(expr: ^parser.Literal_Expr) -> (Literal_Value, bool) {
 	switch expr.type {
 	case .TRUE:
-		fmt.println("just before returning")
 		return true, true
 	case .FALSE:
 		return false, true
