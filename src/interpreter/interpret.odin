@@ -72,6 +72,8 @@ assert_number :: proc(value: Literal_Value) {
 }
 
 get_truth_value :: proc(value: Literal_Value) -> (bool, bool) {
+	if value == nil do return false, true
+
 	#partial switch v in value {
 	case f64:
 		return true, true
