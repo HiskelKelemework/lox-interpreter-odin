@@ -120,6 +120,19 @@ handle_interpret :: proc(filename: string) {
 		os.exit(65)
 	}
 
-	fmt.println(typeid_of(type_of(result)))
-	fmt.println(result)
+	#partial switch v in result {
+	case f64:
+		int_version := int(v)
+		is_whole_number := f64(int_version) == v
+		fmt.println("is whole number", is_whole_number)
+
+		if (is_whole_number) {
+			fmt.println(int_version)
+		} else {
+			fmt.println(v)
+		}
+	case:
+		fmt.println("default case")
+		fmt.println(result)
+	}
 }

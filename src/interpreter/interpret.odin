@@ -32,7 +32,7 @@ interpret_literal :: proc(expr: ^parser.Literal_Expr) -> (Literal_Value, bool) {
 	case .NIL:
 		return nil, true
 	case .NUMBER:
-		return expr.value, true
+		return strconv.parse_f64(expr.value)
 	case .STRING:
 		return expr.value, true
 	case:
