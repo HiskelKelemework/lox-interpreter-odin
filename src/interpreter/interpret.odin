@@ -62,6 +62,18 @@ interpret_binary :: proc(
 	case .MINUS:
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) - right.(f64), nil
+	case .LESS:
+		assert_numeric_operands(expr.operation, left, right) or_return
+		return left.(f64) < right.(f64), nil
+	case .LESS_EQUAL:
+		assert_numeric_operands(expr.operation, left, right) or_return
+		return left.(f64) <= right.(f64), nil
+	case .GREATER:
+		assert_numeric_operands(expr.operation, left, right) or_return
+		return left.(f64) > right.(f64), nil
+	case .GREATER_EQUAL:
+		assert_numeric_operands(expr.operation, left, right) or_return
+		return left.(f64) >= right.(f64), nil
 	case:
 		panic("unimplemented binary operation")
 	}
