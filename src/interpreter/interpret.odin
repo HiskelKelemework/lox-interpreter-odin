@@ -97,7 +97,7 @@ interpret_unary :: proc(
 
 	#partial switch expr.operation.type {
 	case .MINUS:
-		assert_numeric(expr.operation, value, "Operand must be a number.")
+		assert_numeric(expr.operation, value, "Operand must be a number.") or_return
 		return value.(f64) * -1, nil
 	case .BANG:
 		boolean_value := coerce_to_boolean(expr.operation, value) or_return

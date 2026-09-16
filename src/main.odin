@@ -68,9 +68,10 @@ main :: proc() {
 	}
 
 	result, runtime_error := interpreter.interpret(expr)
+
 	if runtime_error != nil {
-		fmt.println(runtime_error.(interpreter.Runtime_Error))
-		// NOTE: set error code here
+		error := runtime_error.(interpreter.Runtime_Error)
+		fmt.printfln("%s\n[line %d]", error.error, error.line_number)
 		return
 	}
 
