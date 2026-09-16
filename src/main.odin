@@ -70,6 +70,7 @@ main :: proc() {
 	result, runtime_error := interpreter.interpret(expr)
 
 	if runtime_error != nil {
+		exit_code = 70
 		error := runtime_error.(interpreter.Runtime_Error)
 		fmt.printfln("%s\n[line %d]", error.error, error.line_number)
 		return
