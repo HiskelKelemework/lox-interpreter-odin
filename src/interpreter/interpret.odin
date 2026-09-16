@@ -97,7 +97,7 @@ interpret_unary :: proc(
 
 	#partial switch expr.operation.type {
 	case .MINUS:
-		assert_numeric(expr.operation, value)
+		assert_numeric(expr.operation, value, "Operand must be a number.")
 		return value.(f64) * -1, nil
 	case .BANG:
 		boolean_value := coerce_to_boolean(expr.operation, value) or_return
@@ -145,12 +145,13 @@ assert_numeric_operands :: proc(
 	return nil
 }
 
-assert_numeric :: proc(operation: lexer.Token, left: Literal_Value) -> Maybe(Runtime_Error) {
+assert_numeric :: proc(
+	operation: lexer.Token,
+	left: Literal_Value,
+	error: string,
+) -> Maybe(Runtime_Error) {
 	if _, ok := left.(f64); !ok {
-		return Runtime_Error {
-			line_number = operation.line_number,
-			error = "Expected number on the right side",
-		}
+		return Runtime_Error{line_number = operation.line_number, error = error}
 	}
 
 	return nil
