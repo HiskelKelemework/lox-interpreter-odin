@@ -74,6 +74,14 @@ interpret_binary :: proc(
 	case .GREATER_EQUAL:
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) >= right.(f64), nil
+	case .EQUAL_EQUAL:
+		same_type := type_of(left) == type_of(right)
+		if !same_type do return false, nil
+		return left == right, nil
+	case .BANG_EQUAL:
+		same_type := type_of(left) == type_of(right)
+		if !same_type do return true, nil
+		return left != right, nil
 	case:
 		panic("unimplemented binary operation")
 	}
