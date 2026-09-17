@@ -132,8 +132,8 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 		case '/':
 			if i + 1 < len(source_code) && source_code[i + 1] == '/' {
 				for {
-					i += 1
 					if source_code[i] == '\n' do break
+					i += 1
 				}
 
 				break
