@@ -89,5 +89,9 @@ main :: proc() {
 			fmt.eprintfln("%s\n[line %d]", error.error, error.line_number)
 			return
 		}
+
+		if stmt.kind == .PRINT {
+			fmt.println(result)
+		}
 	}
 }

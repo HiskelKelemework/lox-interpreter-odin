@@ -20,17 +20,7 @@ Runtime_Error :: struct {
 }
 
 interpret :: proc(stmt: parser.Stmt) -> (result: Literal_Value, error: Maybe(Runtime_Error)) {
-	#partial switch stmt.kind {
-	case .PRINT:
-		result := interpret_expr(stmt.expr) or_return
-		print_string_value(result)
-		return nil, nil
-	case .REGULAR:
-		result := interpret_expr(stmt.expr) or_return
-		return result, nil
-	}
-
-	return nil, nil
+	return interpret_expr(stmt.expr)
 }
 
 interpret_expr :: proc(expr: ^parser.Expr) -> (Literal_Value, Maybe(Runtime_Error)) {
