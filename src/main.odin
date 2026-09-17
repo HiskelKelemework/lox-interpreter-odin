@@ -17,7 +17,7 @@ main :: proc() {
 	command := os.args[1]
 	filename := os.args[2]
 
-	allowed_commands := []string{"tokenize", "parse", "evaluate"}
+	allowed_commands := []string{"tokenize", "parse", "evaluate", "run"}
 	if _, found := slice.linear_search(allowed_commands, command); !found {
 		fmt.eprintf("Unknown command: %s\n", command)
 		os.exit(1)
@@ -67,17 +67,28 @@ main :: proc() {
 		return
 	}
 
-	result, runtime_error := interpreter.interpret(stmt)
+	if command == "evaluate" {
+		result, runtime_error := interpreter.interpret_expr(stmt.expr)
+		if runtime_error != nil {
+			exit_code = 70
+			error := runtime_error.(interpreter.Runtime_Error)
+			fmt.eprintfln("%s\n[line %d]", error.error, error.line_number)
+			return
+		}
 
-	if runtime_error != nil {
-		exit_code = 70
-		error := runtime_error.(interpreter.Runtime_Error)
-		fmt.eprintfln("%s\n[line %d]", error.error, error.line_number)
+		interpreter.print_string_value(result)
 		return
 	}
 
-	if command == "evaluate" {
-		// interpreter.print_string_value(result)
+	if command == "run" {
+		result, runtime_error := interpreter.interpret(stmt)
+		if runtime_error != nil {
+			exit_code = 70
+			error := runtime_error.(interpreter.Runtime_Error)
+			fmt.eprintfln("%s\n[line %d]", error.error, error.line_number)
+			return
+		}
+
 		return
 	}
 }
