@@ -61,9 +61,15 @@ Stmt :: struct {
 	expr: ^Expr,
 }
 
-parse :: proc(tokens: []lexer.Token) -> Stmt {
+parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
+	stmts := make([dynamic]Stmt)
 	iterator := TokenIterator{tokens, 0}
-	return parse_statement(&iterator)
+
+	for !match(&iterator, .EOF) {
+		append_elem(&stmts, parse_statement(&iterator))
+	}
+
+	return stmts
 }
 
 parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
@@ -77,6 +83,7 @@ parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 			panic("expected semicolon after a print statement")
 		}
 
+		consume(iter)
 		return Stmt{.PRINT, expression}
 	}
 

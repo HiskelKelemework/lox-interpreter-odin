@@ -59,39 +59,47 @@ main :: proc() {
 	}
 
 
-	stmt := parser.parse(tokens[:])
+	stmts := parser.parse(tokens[:])
 
 	// print AST and exit
 	if command == "parse" {
-		parser.print_ast(stmt.expr)
+		for stmt in stmts {
+			parser.print_ast(stmt.expr)
+		}
+
 		return
 	}
 
 	if command == "evaluate" {
-		result, runtime_error := interpreter.interpret_expr(stmt.expr)
-		if runtime_error != nil {
-			exit_code = 70
-			error := runtime_error.(interpreter.Runtime_Error)
-			fmt.eprintfln("%s\n[line %d]", error.error, error.line_number)
-			return
+		for stmt in stmts {
+			result, runtime_error := interpreter.interpret_expr(stmt.expr)
+			if runtime_error != nil {
+				exit_code = 70
+				error := runtime_error.(interpreter.Runtime_Error)
+				fmt.eprintfln("%s\n[line %d]", error.error, error.line_number)
+				return
+			}
+
+			interpreter.print_string_value(result)
 		}
 
-		interpreter.print_string_value(result)
 		return
 	}
 
 	if command == "run" {
-		result, runtime_error := interpreter.interpret(stmt)
+		for stmt in stmts {
+			result, runtime_error := interpreter.interpret(stmt)
 
-		if runtime_error != nil {
-			exit_code = 70
-			error := runtime_error.(interpreter.Runtime_Error)
-			fmt.eprintfln("%s\n[line %d]", error.error, error.line_number)
-			return
-		}
+			if runtime_error != nil {
+				exit_code = 70
+				error := runtime_error.(interpreter.Runtime_Error)
+				fmt.eprintfln("%s\n[line %d]", error.error, error.line_number)
+				return
+			}
 
-		if stmt.kind == .PRINT {
-			fmt.println(result)
+			if stmt.kind == .PRINT {
+				fmt.println(result)
+			}
 		}
 	}
 }
