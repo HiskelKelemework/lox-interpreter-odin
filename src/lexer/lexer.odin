@@ -67,136 +67,147 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 	lines := bytes.split(source_code, transmute([]byte)string("\n"))
 	defer delete(lines)
 
-	for line, index in lines {
-		line_number := index + 1
+	line_number := 0
 
-		single_line_loop: for i := 0; i < len(line); i += 1 {
-			char := line[i]
+	i := 0
 
-			switch char {
-			case '(':
-				append_elem(&tokens, Token{.LEFT_PAREN, line_number, "(", nil})
-			case ')':
-				append_elem(&tokens, Token{.RIGHT_PAREN, line_number, ")", nil})
-			case '}':
-				append_elem(&tokens, Token{.RIGHT_BRACE, line_number, "}", nil})
-			case '{':
-				append_elem(&tokens, Token{.LEFT_BRACE, line_number, "{", nil})
-			case ',':
-				append_elem(&tokens, Token{.COMMA, line_number, ",", nil})
-			case '.':
-				append_elem(&tokens, Token{.DOT, line_number, ".", nil})
-			case '-':
-				append_elem(&tokens, Token{.MINUS, line_number, "-", nil})
-			case '+':
-				append_elem(&tokens, Token{.PLUS, line_number, "+", nil})
-			case ';':
-				append_elem(&tokens, Token{.SEMICOLON, line_number, ";", nil})
-			case '*':
-				append_elem(&tokens, Token{.STAR, line_number, "*", nil})
-			case '=':
-				if i + 1 < len(line) && line[i + 1] == '=' {
-					i += 1
-					append_elem(&tokens, Token{.EQUAL_EQUAL, line_number, "==", nil})
-					continue
-				}
+	for ; i < len(source_code); i += 1 {
+		char := source_code[i]
 
-				append_elem(&tokens, Token{.EQUAL, line_number, "=", nil})
-			case '!':
-				if i + 1 < len(line) && line[i + 1] == '=' {
-					i += 1
-					append_elem(&tokens, Token{.BANG_EQUAL, line_number, "!=", nil})
-					continue
-				}
-
-				append_elem(&tokens, Token{.BANG, line_number, "!", nil})
-			case '<':
-				if i + 1 < len(line) && line[i + 1] == '=' {
-					i += 1
-					append_elem(&tokens, Token{.LESS_EQUAL, line_number, "<=", nil})
-					continue
-				}
-
-				append_elem(&tokens, Token{.LESS, line_number, "<", nil})
-			case '>':
-				if i + 1 < len(line) && line[i + 1] == '=' {
-					i += 1
-					append_elem(&tokens, Token{.GREATER_EQUAL, line_number, ">=", nil})
-					continue
-				}
-
-				append_elem(&tokens, Token{.GREATER, line_number, ">", nil})
-			case '/':
-				if i + 1 < len(line) && line[i + 1] == '/' do break single_line_loop
-				append_elem(&tokens, Token{.SLASH, line_number, "/", nil})
-			case '\t', '\n':
+		switch char {
+		case '\n':
+			line_number += 1
+		case '(':
+			append_elem(&tokens, Token{.LEFT_PAREN, line_number, "(", nil})
+		case ')':
+			append_elem(&tokens, Token{.RIGHT_PAREN, line_number, ")", nil})
+		case '}':
+			append_elem(&tokens, Token{.RIGHT_BRACE, line_number, "}", nil})
+		case '{':
+			append_elem(&tokens, Token{.LEFT_BRACE, line_number, "{", nil})
+		case ',':
+			append_elem(&tokens, Token{.COMMA, line_number, ",", nil})
+		case '.':
+			append_elem(&tokens, Token{.DOT, line_number, ".", nil})
+		case '-':
+			append_elem(&tokens, Token{.MINUS, line_number, "-", nil})
+		case '+':
+			append_elem(&tokens, Token{.PLUS, line_number, "+", nil})
+		case ';':
+			append_elem(&tokens, Token{.SEMICOLON, line_number, ";", nil})
+		case '*':
+			append_elem(&tokens, Token{.STAR, line_number, "*", nil})
+		case '=':
+			if i + 1 < len(source_code) && source_code[i + 1] == '=' {
+				i += 1
+				append_elem(&tokens, Token{.EQUAL_EQUAL, line_number, "==", nil})
 				continue
-			case '"':
-				j := i + 1
-				found := false
+			}
 
-				for ; j < len(line); j += 1 {
-					if line[j] == '"' {
-						found = true
-						break
-					}
-				}
-
-				// skip to next line processing
-				if !found {
-					append_elem(
-						&errors,
-						fmt.tprintf("[line %d] Error: Unterminated string.", line_number),
-					)
-					break single_line_loop
-				}
-
-				string_value := string(line[i + 1:j])
-
-				append_elem(
-					&tokens,
-					Token{.STRING, line_number, fmt.tprintf("\"%s\"", string_value), string_value},
-				)
-				i = j
-			case '0' ..= '9':
-				end_index := parse_number(line, i)
-
-				numeric_string := string(line[i:end_index + 1])
-				formatted := format_floating_point(numeric_string)
-
-				append_elem(&tokens, Token{.NUMBER, line_number, numeric_string, formatted})
-
-				i = end_index
-			case ' ':
+			append_elem(&tokens, Token{.EQUAL, line_number, "=", nil})
+		case '!':
+			if i + 1 < len(source_code) && source_code[i + 1] == '=' {
+				i += 1
+				append_elem(&tokens, Token{.BANG_EQUAL, line_number, "!=", nil})
 				continue
-			case 'a' ..= 'z', 'A' ..= 'Z', '_':
-				// forward until we find a non alpha, underscore char
-				j := i
+			}
 
-				for ; j < len(line); j += 1 {
-					if !is_alpha_numeric(line[j]) do break
+			append_elem(&tokens, Token{.BANG, line_number, "!", nil})
+		case '<':
+			if i + 1 < len(source_code) && source_code[i + 1] == '=' {
+				i += 1
+				append_elem(&tokens, Token{.LESS_EQUAL, line_number, "<=", nil})
+				continue
+			}
+
+			append_elem(&tokens, Token{.LESS, line_number, "<", nil})
+		case '>':
+			if i + 1 < len(source_code) && source_code[i + 1] == '=' {
+				i += 1
+				append_elem(&tokens, Token{.GREATER_EQUAL, line_number, ">=", nil})
+				continue
+			}
+
+			append_elem(&tokens, Token{.GREATER, line_number, ">", nil})
+		case '/':
+			if i + 1 < len(source_code) && source_code[i + 1] == '/' {
+				for {
+					i += 1
+					if source_code[i] == '\n' do break
 				}
 
-				identifier := string(line[i:j])
+				break
+			}
 
-				keyword_enum, is_keyword := reserved_keywords_enum_map[identifier]
-				if is_keyword {
-					append_elem(&tokens, Token{keyword_enum, line_number, identifier, nil})
-				} else {
-					append_elem(&tokens, Token{.IDENTIFIER, line_number, identifier, nil})
+			append_elem(&tokens, Token{.SLASH, line_number, "/", nil})
+		case '\t':
+			continue
+		case '"':
+			j := i + 1
+			found := false
+
+			for ; j < len(source_code); j += 1 {
+				if source_code[j] == '"' {
+					found = true
+					break
 				}
+			}
 
-				i = j - 1
-			case '$', '#', '@', '%':
+			// skip to next line processing
+			if !found {
 				append_elem(
 					&errors,
-					fmt.tprintf(
-						"[line %d] Error: Unexpected character: %s",
-						line_number,
-						char == '%' ? "%" : fmt.tprintf("%c", char), // % is a formatter parameter. hence the shenanigan
-					),
+					fmt.tprintf("[line %d] Error: Unterminated string.", line_number),
 				)
+
+				break
 			}
+
+			string_value := string(source_code[i + 1:j])
+
+			append_elem(
+				&tokens,
+				Token{.STRING, line_number, fmt.tprintf("\"%s\"", string_value), string_value},
+			)
+			i = j
+		case '0' ..= '9':
+			end_index := parse_number(source_code, i)
+
+			numeric_string := string(source_code[i:end_index + 1])
+			formatted := format_floating_point(numeric_string)
+
+			append_elem(&tokens, Token{.NUMBER, line_number, numeric_string, formatted})
+
+			i = end_index
+		case ' ':
+			continue
+		case 'a' ..= 'z', 'A' ..= 'Z', '_':
+			// forward until we find a non alpha, underscore char
+			j := i
+
+			for ; j < len(source_code); j += 1 {
+				if !is_alpha_numeric(source_code[j]) do break
+			}
+
+			identifier := string(source_code[i:j])
+
+			keyword_enum, is_keyword := reserved_keywords_enum_map[identifier]
+			if is_keyword {
+				append_elem(&tokens, Token{keyword_enum, line_number, identifier, nil})
+			} else {
+				append_elem(&tokens, Token{.IDENTIFIER, line_number, identifier, nil})
+			}
+
+			i = j - 1
+		case '$', '#', '@', '%':
+			append_elem(
+				&errors,
+				fmt.tprintf(
+					"[line %d] Error: Unexpected character: %s",
+					line_number,
+					char == '%' ? "%" : fmt.tprintf("%c", char), // % is a formatter parameter. hence the shenanigan
+				),
+			)
 		}
 	}
 
