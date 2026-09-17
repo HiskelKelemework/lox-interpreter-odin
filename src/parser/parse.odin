@@ -97,12 +97,9 @@ parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 
 	// expect a closing semicolon
 	is_semi_colon := current(iter).type == .SEMICOLON
-	if !is_semi_colon {
-		os.exit(65)
+	if is_semi_colon {
+		consume(iter)
 	}
-
-	// this consumes the ;
-	consume(iter)
 
 	return Stmt{.EXPRESSION, expr}
 }
