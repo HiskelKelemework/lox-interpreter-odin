@@ -81,9 +81,7 @@ main :: proc() {
 	}
 
 	if command == "run" {
-		fmt.println(stmt)
 		result, runtime_error := interpreter.interpret(stmt)
-		fmt.println("error is", runtime_error)
 
 		if runtime_error != nil {
 			exit_code = 70
@@ -93,7 +91,6 @@ main :: proc() {
 		}
 
 		fmt.println(result)
-
 		return
 	}
 }
