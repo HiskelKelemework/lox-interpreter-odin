@@ -161,6 +161,7 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 					fmt.tprintf("[line %d] Error: Unterminated string.", line_number),
 				)
 
+				i = j
 				break
 			}
 
