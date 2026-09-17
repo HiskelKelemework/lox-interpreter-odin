@@ -1,7 +1,4 @@
-()  # {}
-@
-$
-+++
-// Let's Go!
-+++
-#
+(10 + 4) == (9 * 2) / 10;
+print "hello world";
+false;
+print !true;

@@ -53,7 +53,7 @@ Expr :: struct {
 
 StmtKind :: enum {
 	PRINT,
-	REGULAR,
+	EXPRESSION,
 }
 
 Stmt :: struct {
@@ -94,7 +94,17 @@ parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 	}
 
 	expr := parse_expression(iter)
-	return Stmt{.REGULAR, expr}
+
+	// expect a closing semicolon
+	is_semi_colon := current(iter).type == .SEMICOLON
+	if !is_semi_colon {
+		os.exit(65)
+	}
+
+	// this consumes the ;
+	consume(iter)
+
+	return Stmt{.EXPRESSION, expr}
 }
 
 parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {
