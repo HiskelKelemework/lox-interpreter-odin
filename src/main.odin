@@ -89,8 +89,5 @@ main :: proc() {
 			fmt.eprintfln("%s\n[line %d]", error.error, error.line_number)
 			return
 		}
-
-		fmt.println(result)
-		return
 	}
 }
