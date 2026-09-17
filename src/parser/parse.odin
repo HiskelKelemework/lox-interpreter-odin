@@ -74,6 +74,8 @@ parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
 
 parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 	if match(iter, .PRINT) {
+		print := current(iter)
+
 		// consume print keyword
 		consume(iter)
 		is_semi_colon := current(iter).type == .SEMICOLON
@@ -86,6 +88,10 @@ parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 		// expect a closing semicolon
 		is_semi_colon = current(iter).type == .SEMICOLON
 		if !is_semi_colon {
+			fmt.eprintfln(
+				"[line %d] Expected a semicolon after a PRINT statement",
+				print.line_number,
+			)
 			os.exit(65)
 		}
 
