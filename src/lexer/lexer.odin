@@ -67,7 +67,7 @@ lex :: proc(source_code: []byte) -> (tokens: [dynamic]Token, errors: [dynamic]st
 	lines := bytes.split(source_code, transmute([]byte)string("\n"))
 	defer delete(lines)
 
-	line_number := 0
+	line_number := 1
 
 	i := 0
 
