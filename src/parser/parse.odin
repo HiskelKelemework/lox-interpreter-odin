@@ -53,6 +53,7 @@ Expr :: struct {
 
 StmtKind :: enum {
 	PRINT,
+	REGULAR,
 }
 
 Stmt :: struct {
@@ -79,7 +80,8 @@ parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 		return Stmt{.PRINT, expression}
 	}
 
-	panic("unrecognized statement type")
+	expr := parse_expression(iter)
+	return Stmt{.REGULAR, expr}
 }
 
 parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {

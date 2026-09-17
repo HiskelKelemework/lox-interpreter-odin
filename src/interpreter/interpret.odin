@@ -25,6 +25,9 @@ interpret :: proc(stmt: parser.Stmt) -> (result: Literal_Value, error: Maybe(Run
 		result := interpret_expr(stmt.expr) or_return
 		print_string_value(result)
 		return nil, nil
+	case .REGULAR:
+		result := interpret_expr(stmt.expr) or_return
+		return result, nil
 	}
 
 	return nil, nil
