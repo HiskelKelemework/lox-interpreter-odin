@@ -19,12 +19,23 @@ Runtime_Error :: struct {
 	error:       string,
 }
 
-interpret :: proc(expr: ^parser.Expr) -> (Literal_Value, Maybe(Runtime_Error)) {
+interpret :: proc(stmt: parser.Stmt) -> (result: Literal_Value, error: Maybe(Runtime_Error)) {
+	#partial switch stmt.kind {
+	case .PRINT:
+		result := interpret_expr(stmt.expr) or_return
+		print_string_value(result)
+		return nil, nil
+	}
+
+	return nil, nil
+}
+
+interpret_expr :: proc(expr: ^parser.Expr) -> (Literal_Value, Maybe(Runtime_Error)) {
 	#partial switch &v in expr.value {
 	case parser.Literal_Expr:
 		return interpret_literal(&v)
 	case parser.Grouping_Expr:
-		return interpret(v.value)
+		return interpret_expr(v.value)
 	case parser.Unary_Expr:
 		return interpret_unary(&v)
 	case parser.Binary_Expr:
@@ -40,8 +51,8 @@ interpret_binary :: proc(
 	result: Literal_Value,
 	runtime_error: Maybe(Runtime_Error),
 ) {
-	left := interpret(expr.left) or_return
-	right := interpret(expr.right) or_return
+	left := interpret_expr(expr.left) or_return
+	right := interpret_expr(expr.right) or_return
 
 	#partial switch expr.operation.type {
 	case .STAR:
@@ -93,7 +104,7 @@ interpret_unary :: proc(
 	result: Literal_Value,
 	runtime_error: Maybe(Runtime_Error),
 ) {
-	value := interpret(expr.right) or_return
+	value := interpret_expr(expr.right) or_return
 
 	#partial switch expr.operation.type {
 	case .MINUS:
@@ -179,7 +190,7 @@ coerce_to_boolean :: proc(
 	}
 }
 
-stingify_value :: proc(value: Literal_Value) {
+print_string_value :: proc(value: Literal_Value) {
 	#partial switch v in value {
 	case f64:
 		int_version := int(v)

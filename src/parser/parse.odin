@@ -51,9 +51,35 @@ Expr :: struct {
 	value: Expression_value,
 }
 
-parse :: proc(tokens: []lexer.Token) -> ^Expr {
+StmtKind :: enum {
+	PRINT,
+}
+
+Stmt :: struct {
+	kind: StmtKind,
+	expr: ^Expr,
+}
+
+parse :: proc(tokens: []lexer.Token) -> Stmt {
 	iterator := TokenIterator{tokens, 0}
-	return parse_expression(&iterator)
+	return parse_statement(&iterator)
+}
+
+parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
+	if match(iter, .PRINT) {
+		// consume print keyword
+		consume(iter)
+		expression := parse_expression(iter)
+		// expect a closing semicolon
+		is_semi_colon := current(iter).type == .SEMICOLON
+		if !is_semi_colon {
+			panic("expected semicolon after a print statement")
+		}
+
+		return Stmt{.PRINT, expression}
+	}
+
+	panic("unrecognized statement type")
 }
 
 parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {

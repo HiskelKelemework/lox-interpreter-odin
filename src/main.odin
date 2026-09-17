@@ -59,15 +59,15 @@ main :: proc() {
 	}
 
 
-	expr := parser.parse(tokens[:])
+	stmt := parser.parse(tokens[:])
 
 	// print AST and exit
 	if command == "parse" {
-		parser.print_ast(expr)
+		parser.print_ast(stmt.expr)
 		return
 	}
 
-	result, runtime_error := interpreter.interpret(expr)
+	result, runtime_error := interpreter.interpret(stmt)
 
 	if runtime_error != nil {
 		exit_code = 70
@@ -77,7 +77,7 @@ main :: proc() {
 	}
 
 	if command == "evaluate" {
-		interpreter.stingify_value(result)
+		// interpreter.print_string_value(result)
 		return
 	}
 }
