@@ -35,7 +35,7 @@ Binary_Expr :: struct {
 
 Variable_Expr :: struct {
 	var_name:    lexer.Token,
-	initializer: ^Expr,
+	initializer: Maybe(^Expr),
 }
 
 Expression_Kind :: enum {
@@ -91,6 +91,18 @@ parse_declaration :: proc(iter: ^TokenIterator) -> Stmt {
 		}
 
 		identifier := consume(iter).? // consume identifier
+		if match(iter, .SEMICOLON) {
+			consume(iter) // consume ;
+			expr := new(Expr)
+			expr.kind = .Variable
+
+			expr.value = Variable_Expr {
+				var_name    = identifier,
+				initializer = nil,
+			}
+
+			return Stmt{.VARIABLE, expr}
+		}
 
 		equal_sign := match(iter, .EQUAL)
 		if !equal_sign {

@@ -75,7 +75,8 @@ interpret_variable :: proc(
 	error: Maybe(Runtime_Error),
 ) {
 	token := expr.var_name
-	result = interpret_expr(expr.initializer, env) or_return
+
+	result = expr.initializer == nil ? nil : interpret_expr(expr.initializer.?, env) or_return
 
 	env[token.lexeme] = result
 	return result, nil
