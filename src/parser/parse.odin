@@ -282,7 +282,8 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 
 		closing := current(iter)
 		if closing.type != .RIGHT_PAREN {
-			panic("unmatched closing parenthesis")
+			fmt.eprintln("unmatched closing parenthesis")
+			os.exit(65)
 		}
 
 		consume(iter)
