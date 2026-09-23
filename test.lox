@@ -1,4 +1,2 @@
-print (10 + 4) == (9 * 2) / 10;
-print "hello world"
-print false;
-print !true;
+var a = "foo";
+print a;

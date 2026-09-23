@@ -10,11 +10,12 @@ LiteralType :: enum {
 	NIL,
 	NUMBER,
 	STRING,
+	VARIABLE,
 }
 
 Literal_Expr :: struct {
 	type:  LiteralType,
-	value: string,
+	token: lexer.Token,
 }
 
 Grouping_Expr :: struct {
@@ -32,11 +33,17 @@ Binary_Expr :: struct {
 	right:     ^Expr,
 }
 
+Variable_Expr :: struct {
+	var_name:    lexer.Token,
+	initializer: ^Expr,
+}
+
 Expression_Kind :: enum {
 	Literal,
 	Grouping,
 	Unary,
 	Binary,
+	Variable,
 }
 
 Expression_value :: union {
@@ -44,6 +51,7 @@ Expression_value :: union {
 	Grouping_Expr,
 	Unary_Expr,
 	Binary_Expr,
+	Variable_Expr,
 }
 
 Expr :: struct {
@@ -54,6 +62,7 @@ Expr :: struct {
 StmtKind :: enum {
 	PRINT,
 	EXPRESSION,
+	VARIABLE,
 }
 
 Stmt :: struct {
@@ -66,10 +75,48 @@ parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
 	iterator := TokenIterator{tokens, 0}
 
 	for !match(&iterator, .EOF) {
-		append_elem(&stmts, parse_statement(&iterator))
+		append_elem(&stmts, parse_declaration(&iterator))
 	}
 
 	return stmts
+}
+
+parse_declaration :: proc(iter: ^TokenIterator) -> Stmt {
+	// var x = expr;
+	if match(iter, .VAR) {
+		consume(iter) // consumes VAR
+
+		if !match(iter, .IDENTIFIER) {
+			panic("expected identifier after VAR")
+		}
+
+		identifier := consume(iter).? // consume identifier
+
+		equal_sign := match(iter, .EQUAL)
+		if !equal_sign {
+			panic("expected = after identifier in var declaration")
+		}
+
+		consume(iter) // consume =
+
+		initializer := parse_expression(iter)
+		semi_colon := match(iter, .SEMICOLON)
+		if !semi_colon {
+			panic("expected semicolon in var declaration")
+		}
+		consume(iter) // consume ;
+
+		expr := new(Expr)
+		expr.kind = .Variable
+		expr.value = Variable_Expr {
+			var_name    = identifier,
+			initializer = initializer,
+		}
+
+		return Stmt{.VARIABLE, expr}
+	}
+
+	return parse_statement(iter)
 }
 
 parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
@@ -220,15 +267,15 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 
 	#partial switch token.type {
 	case .TRUE:
-		expr^ = Expr{.Literal, Literal_Expr{.TRUE, "true"}}
+		expr^ = Expr{.Literal, Literal_Expr{.TRUE, token}}
 	case .FALSE:
-		expr^ = Expr{.Literal, Literal_Expr{.FALSE, "false"}}
+		expr^ = Expr{.Literal, Literal_Expr{.FALSE, token}}
 	case .NIL:
-		expr^ = Expr{.Literal, Literal_Expr{.NIL, "nil"}}
+		expr^ = Expr{.Literal, Literal_Expr{.NIL, token}}
 	case .NUMBER:
-		expr^ = Expr{.Literal, Literal_Expr{.NUMBER, token.value.?}}
+		expr^ = Expr{.Literal, Literal_Expr{.NUMBER, token}}
 	case .STRING:
-		expr^ = Expr{.Literal, Literal_Expr{.STRING, token.value.?}}
+		expr^ = Expr{.Literal, Literal_Expr{.STRING, token}}
 	case .LEFT_PAREN:
 		// consume current token, parse the rest as primary again and expect a closing parenthesis
 		nested := parse_expression(iter)
@@ -240,6 +287,8 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 
 		consume(iter)
 		expr^ = Expr{.Grouping, Grouping_Expr{value = nested}}
+	case .IDENTIFIER:
+		expr^ = Expr{.Literal, Literal_Expr{.VARIABLE, token}}
 	case:
 		fmt.eprintfln(
 			"[line %d] Error at '%s': Expect expression.",
@@ -254,7 +303,7 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 }
 
 print_ast :: proc(expression: ^Expr) {
-	switch v in expression.value {
+	#partial switch v in expression.value {
 	case Binary_Expr:
 		print_binary(v)
 	case Literal_Expr:
@@ -267,7 +316,7 @@ print_ast :: proc(expression: ^Expr) {
 }
 
 print_literal :: proc(literal: Literal_Expr) {
-	fmt.print(literal.value)
+	fmt.print(literal.token.value)
 }
 
 print_group :: proc(group: Grouping_Expr) {

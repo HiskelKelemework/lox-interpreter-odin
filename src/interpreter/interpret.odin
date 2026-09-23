@@ -19,33 +19,77 @@ Runtime_Error :: struct {
 	error:       string,
 }
 
-interpret :: proc(stmt: parser.Stmt) -> (result: Literal_Value, error: Maybe(Runtime_Error)) {
-	return interpret_expr(stmt.expr)
+VariableStorage :: distinct map[string]Literal_Value
+
+interpret :: proc(
+	stmt: parser.Stmt,
+	env: ^VariableStorage,
+) -> (
+	result: Literal_Value,
+	error: Maybe(Runtime_Error),
+) {
+	switch stmt.kind {
+	case .VARIABLE:
+		assert(stmt.expr.kind == .Variable, "variable expression must be of type literal")
+		var_expr := stmt.expr^.value.(parser.Variable_Expr)
+		return interpret_variable(&var_expr, env)
+	case .PRINT:
+		result := interpret_expr(stmt.expr, env) or_return
+		fmt.println(result)
+		return result, nil
+	case .EXPRESSION:
+		return interpret_expr(stmt.expr, env)
+	}
+
+	panic("unimplemented")
 }
 
-interpret_expr :: proc(expr: ^parser.Expr) -> (Literal_Value, Maybe(Runtime_Error)) {
+interpret_expr :: proc(
+	expr: ^parser.Expr,
+	env: ^VariableStorage,
+) -> (
+	Literal_Value,
+	Maybe(Runtime_Error),
+) {
 	#partial switch &v in expr.value {
 	case parser.Literal_Expr:
-		return interpret_literal(&v)
+		return interpret_literal(&v, env)
 	case parser.Grouping_Expr:
-		return interpret_expr(v.value)
+		return interpret_expr(v.value, env)
 	case parser.Unary_Expr:
-		return interpret_unary(&v)
+		return interpret_unary(&v, env)
 	case parser.Binary_Expr:
-		return interpret_binary(&v)
+		return interpret_binary(&v, env)
+	case parser.Variable_Expr:
+		return interpret_variable(&v, env)
 	case:
 		panic("unsupported expr type")
 	}
 }
 
+interpret_variable :: proc(
+	expr: ^parser.Variable_Expr,
+	env: ^VariableStorage,
+) -> (
+	result: Literal_Value,
+	error: Maybe(Runtime_Error),
+) {
+	token := expr.var_name
+	result = interpret_expr(expr.initializer, env) or_return
+
+	env[token.lexeme] = result
+	return result, nil
+}
+
 interpret_binary :: proc(
 	expr: ^parser.Binary_Expr,
+	env: ^VariableStorage,
 ) -> (
 	result: Literal_Value,
 	runtime_error: Maybe(Runtime_Error),
 ) {
-	left := interpret_expr(expr.left) or_return
-	right := interpret_expr(expr.right) or_return
+	left := interpret_expr(expr.left, env) or_return
+	right := interpret_expr(expr.right, env) or_return
 
 	#partial switch expr.operation.type {
 	case .STAR:
@@ -93,11 +137,12 @@ interpret_binary :: proc(
 
 interpret_unary :: proc(
 	expr: ^parser.Unary_Expr,
+	env: ^VariableStorage,
 ) -> (
 	result: Literal_Value,
 	runtime_error: Maybe(Runtime_Error),
 ) {
-	value := interpret_expr(expr.right) or_return
+	value := interpret_expr(expr.right, env) or_return
 
 	#partial switch expr.operation.type {
 	case .MINUS:
@@ -111,7 +156,13 @@ interpret_unary :: proc(
 	}
 }
 
-interpret_literal :: proc(expr: ^parser.Literal_Expr) -> (Literal_Value, Maybe(Runtime_Error)) {
+interpret_literal :: proc(
+	expr: ^parser.Literal_Expr,
+	env: ^VariableStorage,
+) -> (
+	Literal_Value,
+	Maybe(Runtime_Error),
+) {
 	switch expr.type {
 	case .TRUE:
 		return true, nil
@@ -120,13 +171,19 @@ interpret_literal :: proc(expr: ^parser.Literal_Expr) -> (Literal_Value, Maybe(R
 	case .NIL:
 		return nil, nil
 	case .NUMBER:
-		parsed_number, ok := strconv.parse_f64(expr.value)
+		parsed_number, ok := strconv.parse_f64(expr.token.value.?)
 		// NOTE: this should never happen. if it does, it means our lexer isn't working properly
 		if !ok do panic("should never happen: Could not parse number to f64")
 
 		return parsed_number, nil
 	case .STRING:
-		return expr.value, nil
+		return expr.token.value.?, nil
+	case .VARIABLE:
+		key := expr.token.lexeme
+		value, ok := env[key]
+		if !ok do return nil, Runtime_Error{99, "undefined variable"}
+
+		return value, nil
 	case:
 		panic(fmt.tprintf("unsupported literal %s", expr.type))
 	}

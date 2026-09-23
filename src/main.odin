@@ -70,9 +70,12 @@ main :: proc() {
 		return
 	}
 
+	env: interpreter.VariableStorage = make(interpreter.VariableStorage)
+	defer delete(env)
+
 	if command == "evaluate" {
 		for stmt in stmts {
-			result, runtime_error := interpreter.interpret_expr(stmt.expr)
+			result, runtime_error := interpreter.interpret_expr(stmt.expr, &env)
 			if runtime_error != nil {
 				exit_code = 70
 				error := runtime_error.(interpreter.Runtime_Error)
@@ -86,9 +89,10 @@ main :: proc() {
 		return
 	}
 
+
 	if command == "run" {
 		for stmt in stmts {
-			result, runtime_error := interpreter.interpret(stmt)
+			result, runtime_error := interpreter.interpret(stmt, &env)
 
 			if runtime_error != nil {
 				exit_code = 70
@@ -97,9 +101,6 @@ main :: proc() {
 				return
 			}
 
-			if stmt.kind == .PRINT {
-				fmt.println(result)
-			}
 		}
 	}
 }
