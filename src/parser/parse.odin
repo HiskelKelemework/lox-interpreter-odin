@@ -317,7 +317,14 @@ print_ast :: proc(expression: ^Expr) {
 }
 
 print_literal :: proc(literal: Literal_Expr) {
-	fmt.print(literal.token.lexeme)
+	#partial switch literal.type {
+	case .NUMBER:
+		fallthrough
+	case .STRING:
+		fmt.print(literal.token.value)
+	case:
+		fmt.print(literal.token.lexeme)
+	}
 }
 
 print_group :: proc(group: Grouping_Expr) {
