@@ -64,7 +64,16 @@ main :: proc() {
 	// print AST and exit
 	if command == "parse" {
 		for stmt in stmts {
-			parser.print_ast(stmt.expr)
+			switch v in stmt {
+			case parser.Print_Stmt:
+				parser.print_ast(v.expr)
+			case parser.Expression_Stmt:
+				parser.print_ast(v.expr)
+			case parser.Declaration_Stmt:
+				if expr_ptr, ok := v.initializer.(^parser.Expr); ok {
+					parser.print_ast(expr_ptr)
+				}
+			}
 		}
 
 		return
@@ -75,7 +84,7 @@ main :: proc() {
 
 	if command == "evaluate" {
 		for stmt in stmts {
-			result, runtime_error := interpreter.interpret_expr(stmt.expr, &env)
+			result, runtime_error := interpreter.interpret(stmt, &env)
 			if runtime_error != nil {
 				exit_code = 70
 				error := runtime_error.(interpreter.Runtime_Error)

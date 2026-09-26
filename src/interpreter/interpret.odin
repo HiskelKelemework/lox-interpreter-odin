@@ -28,17 +28,15 @@ interpret :: proc(
 	result: Literal_Value,
 	error: Maybe(Runtime_Error),
 ) {
-	switch stmt.kind {
-	case .VARIABLE:
-		assert(stmt.expr.kind == .Variable, "variable expression must be of type literal")
-		var_expr := stmt.expr^.value.(parser.Variable_Expr)
-		return interpret_variable(&var_expr, env)
-	case .PRINT:
-		result := interpret_expr(stmt.expr, env) or_return
+	switch v in stmt {
+	case parser.Declaration_Stmt:
+		return interpret_variable(v, env)
+	case parser.Print_Stmt:
+		result := interpret_expr(v.expr, env) or_return
 		fmt.println(result)
 		return result, nil
-	case .EXPRESSION:
-		return interpret_expr(stmt.expr, env)
+	case parser.Expression_Stmt:
+		return interpret_expr(v.expr, env)
 	}
 
 	panic("unimplemented")
@@ -60,23 +58,21 @@ interpret_expr :: proc(
 		return interpret_unary(&v, env)
 	case parser.Binary_Expr:
 		return interpret_binary(&v, env)
-	case parser.Variable_Expr:
-		return interpret_variable(&v, env)
 	case:
 		panic("unsupported expr type")
 	}
 }
 
 interpret_variable :: proc(
-	expr: ^parser.Variable_Expr,
+	stmt: parser.Declaration_Stmt,
 	env: ^VariableStorage,
 ) -> (
 	result: Literal_Value,
 	error: Maybe(Runtime_Error),
 ) {
-	token := expr.var_name
+	token := stmt.var_name
 
-	result = expr.initializer == nil ? nil : interpret_expr(expr.initializer.?, env) or_return
+	result = stmt.initializer == nil ? nil : interpret_expr(stmt.initializer.?, env) or_return
 
 	env[token.lexeme] = result
 	return result, nil

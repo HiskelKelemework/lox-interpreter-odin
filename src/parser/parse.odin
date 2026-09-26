@@ -33,11 +33,6 @@ Binary_Expr :: struct {
 	right:     ^Expr,
 }
 
-Variable_Expr :: struct {
-	var_name:    lexer.Token,
-	initializer: Maybe(^Expr),
-}
-
 Expression_Kind :: enum {
 	Literal,
 	Grouping,
@@ -51,7 +46,6 @@ Expression_value :: union {
 	Grouping_Expr,
 	Unary_Expr,
 	Binary_Expr,
-	Variable_Expr,
 }
 
 Expr :: struct {
@@ -59,15 +53,23 @@ Expr :: struct {
 	value: Expression_value,
 }
 
-StmtKind :: enum {
-	PRINT,
-	EXPRESSION,
-	VARIABLE,
+Print_Stmt :: struct {
+	expr: ^Expr,
 }
 
-Stmt :: struct {
-	kind: StmtKind,
+Expression_Stmt :: struct {
 	expr: ^Expr,
+}
+
+Declaration_Stmt :: struct {
+	var_name:    lexer.Token,
+	initializer: Maybe(^Expr),
+}
+
+Stmt :: union {
+	Print_Stmt,
+	Expression_Stmt,
+	Declaration_Stmt,
 }
 
 parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
@@ -93,15 +95,7 @@ parse_declaration :: proc(iter: ^TokenIterator) -> Stmt {
 		identifier := consume(iter).? // consume identifier
 		if match(iter, .SEMICOLON) {
 			consume(iter) // consume ;
-			expr := new(Expr)
-			expr.kind = .Variable
-
-			expr.value = Variable_Expr {
-				var_name    = identifier,
-				initializer = nil,
-			}
-
-			return Stmt{.VARIABLE, expr}
+			return Declaration_Stmt{identifier, nil}
 		}
 
 		equal_sign := match(iter, .EQUAL)
@@ -118,14 +112,7 @@ parse_declaration :: proc(iter: ^TokenIterator) -> Stmt {
 		}
 		consume(iter) // consume ;
 
-		expr := new(Expr)
-		expr.kind = .Variable
-		expr.value = Variable_Expr {
-			var_name    = identifier,
-			initializer = initializer,
-		}
-
-		return Stmt{.VARIABLE, expr}
+		return Declaration_Stmt{identifier, initializer}
 	}
 
 	return parse_statement(iter)
@@ -155,7 +142,7 @@ parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 		}
 
 		consume(iter)
-		return Stmt{.PRINT, expression}
+		return Print_Stmt{expression}
 	}
 
 	expr := parse_expression(iter)
@@ -166,7 +153,7 @@ parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 		consume(iter)
 	}
 
-	return Stmt{.EXPRESSION, expr}
+	return Expression_Stmt{expr}
 }
 
 parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {

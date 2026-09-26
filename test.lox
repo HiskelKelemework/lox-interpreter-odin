@@ -1,2 +1,2 @@
-var bar;
-print bar;
+var bar = 78 * 88;
+print bar * bar;
