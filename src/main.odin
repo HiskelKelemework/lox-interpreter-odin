@@ -80,12 +80,16 @@ main :: proc() {
 		return
 	}
 
-	env: interpreter.VariableStorage = make(interpreter.VariableStorage)
-	defer delete(env)
+	env := new(interpreter.VariableStorage)
+	storage := make(map[string]interpreter.Literal_Value)
+	env.storage = &storage
+
+	defer delete(storage)
+	defer free(env)
 
 	if command == "evaluate" {
 		for stmt in stmts {
-			result, runtime_error := interpreter.interpret(stmt, &env)
+			result, runtime_error := interpreter.interpret(stmt, env)
 			if runtime_error != nil {
 				exit_code = 70
 				error := runtime_error.(interpreter.Runtime_Error)
@@ -102,7 +106,7 @@ main :: proc() {
 
 	if command == "run" {
 		for stmt in stmts {
-			result, runtime_error := interpreter.interpret(stmt, &env)
+			result, runtime_error := interpreter.interpret(stmt, env)
 
 			if runtime_error != nil {
 				exit_code = 70

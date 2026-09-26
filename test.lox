@@ -1,6 +1,9 @@
 {
-    var bar = 11;
-    var world = 11;
-    {
-        print bar + world;
+  var hello = "outer hello";
+  {
+    var hello = "inner hello";
+    print hello;
+  }
+  print hello;
 }
+print hello;

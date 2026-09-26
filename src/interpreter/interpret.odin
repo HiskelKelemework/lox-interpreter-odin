@@ -19,7 +19,55 @@ Runtime_Error :: struct {
 	error:       string,
 }
 
-VariableStorage :: distinct map[string]Literal_Value
+VariableStorage :: struct {
+	enclosing: ^VariableStorage,
+	storage:   ^map[string]Literal_Value,
+}
+
+create_var_value :: proc(storage: ^VariableStorage, key: string, value: Literal_Value) {
+	storage.storage[key] = value
+}
+
+update_var_value :: proc(
+	storage: ^VariableStorage,
+	key: string,
+	value: Literal_Value,
+) -> (
+	success: bool,
+) {
+	current_scope := storage
+
+	for current_scope != nil {
+		_, exists := current_scope.storage[key]
+		if exists {
+			current_scope.storage[key] = value
+			return true
+		}
+
+		current_scope = storage.enclosing
+	}
+
+	return false
+}
+
+get_var_value :: proc(
+	storage: ^VariableStorage,
+	key: string,
+) -> (
+	result: Literal_Value,
+	found: bool,
+) {
+	current_scope := storage
+
+	for current_scope != nil {
+		value, exists := current_scope.storage[key]
+		if exists do return value, true
+
+		current_scope = current_scope.enclosing
+	}
+
+	return nil, false
+}
 
 interpret :: proc(
 	stmt: parser.Stmt,
@@ -51,9 +99,17 @@ interpret_block :: proc(
 	result: Literal_Value,
 	error: Maybe(Runtime_Error),
 ) {
+	new_env := new(VariableStorage)
+	new_storage := make(map[string]Literal_Value)
+	new_env.storage = &new_storage
+	new_env.enclosing = env
+
+	defer delete(new_storage)
+	defer free(new_env)
+
 	// todo: make new env here and pass it on
 	for stmt in block_stmt {
-		interpret(stmt, env) or_return
+		interpret(stmt, new_env) or_return
 	}
 
 	return nil, nil
@@ -90,16 +146,18 @@ interpret_assignment :: proc(
 	error: Maybe(Runtime_Error),
 ) {
 	key := expr.variable.lexeme
+	value := interpret_expr(expr.value, env) or_return
 
-	if _, exists := env[key]; !exists {
+	success := update_var_value(env, key, value)
+
+	if !success {
 		return nil, Runtime_Error {
 			line_number = expr.variable.line_number,
 			error = "Undeclared variable",
 		}
 	}
 
-	env[key] = interpret_expr(expr.value, env) or_return
-	return env[key], nil
+	return value, nil
 }
 
 interpret_variable :: proc(
@@ -113,7 +171,8 @@ interpret_variable :: proc(
 
 	result = stmt.initializer == nil ? nil : interpret_expr(stmt.initializer.?, env) or_return
 
-	env[token.lexeme] = result
+	create_var_value(env, token.lexeme, result)
+
 	return result, nil
 }
 
@@ -216,8 +275,9 @@ interpret_literal :: proc(
 		return expr.token.value.?, nil
 	case .VARIABLE:
 		key := expr.token.lexeme
-		value, ok := env[key]
-		if !ok do return nil, Runtime_Error{99, "undefined variable"}
+
+		value, found := get_var_value(env, key)
+		if !found do return nil, undefined_variable_error(expr.token)
 
 		return value, nil
 	case:
@@ -290,4 +350,10 @@ print_string_value :: proc(value: Literal_Value) {
 	case:
 		fmt.println(value)
 	}
+}
+
+undefined_variable_error :: proc(token: lexer.Token) -> Runtime_Error {
+	key := token.lexeme
+	error := fmt.tprintf("Undefined vairable '%s'.", key)
+	return Runtime_Error{token.line_number, error}
 }
