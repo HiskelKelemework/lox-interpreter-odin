@@ -33,12 +33,18 @@ Binary_Expr :: struct {
 	right:     ^Expr,
 }
 
+Assignment_Expr :: struct {
+	variable: lexer.Token,
+	value:    ^Expr,
+}
+
 Expression_Kind :: enum {
 	Literal,
 	Grouping,
 	Unary,
 	Binary,
 	Variable,
+	Assignment,
 }
 
 Expression_value :: union {
@@ -46,6 +52,7 @@ Expression_value :: union {
 	Grouping_Expr,
 	Unary_Expr,
 	Binary_Expr,
+	Assignment_Expr,
 }
 
 Expr :: struct {
@@ -118,6 +125,46 @@ parse_declaration :: proc(iter: ^TokenIterator) -> Stmt {
 	return parse_statement(iter)
 }
 
+parse_assignment :: proc(iter: ^TokenIterator) -> ^Expr {
+	expr := parse_equality(iter)
+
+	if match(iter, .EQUAL) {
+		equal := consume(iter)
+		assignment := parse_assignment(iter)
+
+		expr_is_identifier := expr.kind == .Literal
+		literal_expr, ok := expr.value.(Literal_Expr)
+
+		if !ok {
+			// this is invalid
+			fmt.eprintln(
+				"expected the left hand side of an assignment operation to be a literal expression",
+			)
+			os.exit(65)
+		}
+
+		variable_literal := literal_expr.type == .VARIABLE
+		if !variable_literal {
+			fmt.eprintln(
+				"expected the left hand side of an assignment operation to be a variable literal",
+			)
+			os.exit(65)
+		}
+
+
+		assignment_expr := new(Expr)
+		assignment_expr.kind = .Assignment
+		assignment_expr.value = Assignment_Expr {
+			variable = literal_expr.token,
+			value    = assignment,
+		}
+
+		return assignment_expr
+	}
+
+	return expr
+}
+
 parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 	if match(iter, .PRINT) {
 		print := current(iter)
@@ -157,7 +204,7 @@ parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 }
 
 parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {
-	return parse_equality(iter)
+	return parse_assignment(iter)
 }
 
 parse_equality :: proc(iter: ^TokenIterator) -> ^Expr {
@@ -180,6 +227,7 @@ parse_equality :: proc(iter: ^TokenIterator) -> ^Expr {
 
 	return expr
 }
+
 parse_comparison :: proc(iter: ^TokenIterator) -> ^Expr {
 	expr := parse_term(iter)
 

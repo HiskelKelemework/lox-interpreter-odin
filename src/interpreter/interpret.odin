@@ -58,9 +58,31 @@ interpret_expr :: proc(
 		return interpret_unary(&v, env)
 	case parser.Binary_Expr:
 		return interpret_binary(&v, env)
+	case parser.Assignment_Expr:
+		return interpret_assignment(&v, env)
 	case:
 		panic("unsupported expr type")
 	}
+}
+
+interpret_assignment :: proc(
+	expr: ^parser.Assignment_Expr,
+	env: ^VariableStorage,
+) -> (
+	result: Literal_Value,
+	error: Maybe(Runtime_Error),
+) {
+	key := expr.variable.lexeme
+
+	if _, exists := env[key]; !exists {
+		return nil, Runtime_Error {
+			line_number = expr.variable.line_number,
+			error = "Undeclared variable",
+		}
+	}
+
+	env[key] = interpret_expr(expr.value, env) or_return
+	return env[key], nil
 }
 
 interpret_variable :: proc(
