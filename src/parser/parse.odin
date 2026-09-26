@@ -73,10 +73,13 @@ Declaration_Stmt :: struct {
 	initializer: Maybe(^Expr),
 }
 
+Block_Stmt :: distinct [dynamic]Stmt
+
 Stmt :: union {
 	Print_Stmt,
 	Expression_Stmt,
 	Declaration_Stmt,
+	Block_Stmt,
 }
 
 parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
@@ -84,10 +87,33 @@ parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
 	iterator := TokenIterator{tokens, 0}
 
 	for !match(&iterator, .EOF) {
-		append_elem(&stmts, parse_declaration(&iterator))
+		append_elem(&stmts, parse_block(&iterator))
 	}
 
 	return stmts
+}
+
+parse_block :: proc(iter: ^TokenIterator) -> Stmt {
+	if match(iter, .LEFT_BRACE) {
+		consume(iter) // consume {
+
+		statements := make(Block_Stmt)
+
+		for !match(iter, .RIGHT_BRACE, .EOF) {
+			stmt := parse_block(iter)
+			append_elem(&statements, stmt)
+		}
+
+		closing := consume(iter).?
+		if closing.type != .RIGHT_BRACE {
+			fmt.eprintfln("[line %d] Error at end: Expect '}' .", closing.line_number)
+			os.exit(65)
+		}
+
+		return statements
+	}
+
+	return parse_declaration(iter)
 }
 
 parse_declaration :: proc(iter: ^TokenIterator) -> Stmt {
@@ -150,7 +176,6 @@ parse_assignment :: proc(iter: ^TokenIterator) -> ^Expr {
 			)
 			os.exit(65)
 		}
-
 
 		assignment_expr := new(Expr)
 		assignment_expr.kind = .Assignment

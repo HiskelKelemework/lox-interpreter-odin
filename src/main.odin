@@ -64,7 +64,7 @@ main :: proc() {
 	// print AST and exit
 	if command == "parse" {
 		for stmt in stmts {
-			switch v in stmt {
+			#partial switch v in stmt {
 			case parser.Print_Stmt:
 				parser.print_ast(v.expr)
 			case parser.Expression_Stmt:
@@ -73,6 +73,7 @@ main :: proc() {
 				if expr_ptr, ok := v.initializer.(^parser.Expr); ok {
 					parser.print_ast(expr_ptr)
 				}
+			case parser.Block_Stmt:
 			}
 		}
 

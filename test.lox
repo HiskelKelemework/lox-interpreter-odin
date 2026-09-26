@@ -1,8 +1,6 @@
-var hello = 65;
-var baz;
-var quz;
-
-hello = baz = quz = hello * 2;
-print hello;
-print baz;
-print baz;
+{
+    var bar = 11;
+    var world = 11;
+    {
+        print bar + world;
+}

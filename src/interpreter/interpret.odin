@@ -37,9 +37,26 @@ interpret :: proc(
 		return result, nil
 	case parser.Expression_Stmt:
 		return interpret_expr(v.expr, env)
+	case parser.Block_Stmt:
+		return interpret_block(v, env)
 	}
 
 	panic("unimplemented")
+}
+
+interpret_block :: proc(
+	block_stmt: parser.Block_Stmt,
+	env: ^VariableStorage,
+) -> (
+	result: Literal_Value,
+	error: Maybe(Runtime_Error),
+) {
+	// todo: make new env here and pass it on
+	for stmt in block_stmt {
+		interpret(stmt, env) or_return
+	}
+
+	return nil, nil
 }
 
 interpret_expr :: proc(
