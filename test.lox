@@ -1,1 +1,12 @@
-if (true) print "if branch"; else if (false) print "else-if branch";
+var age = 67;
+
+var isAdult = age >= 18;
+if (isAdult) { print "eligible for voting: true"; }
+else { print "eligible for voting: false"; }
+
+if (age < 16) { print "eligible for driving: false"; }
+else if (age < 18) { print "eligible for driving: learner's permit"; }
+else { print "eligible for driving: full license"; }
+
+if (age < 21) { print "eligible for drinking (US): false"; }
+else { print "eligible for drinking (US): true"; }
