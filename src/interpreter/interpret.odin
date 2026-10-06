@@ -44,7 +44,7 @@ update_var_value :: proc(
 			return true
 		}
 
-		current_scope = storage.enclosing
+		current_scope = current_scope.enclosing
 	}
 
 	return false
@@ -103,8 +103,11 @@ interpret_if :: proc(
 ) {
 	condition_result := interpret_expr(stmt.condition, env) or_return
 	boolean_value := literal_to_boolean(condition_result)
+
 	if boolean_value {
 		return interpret(stmt.body^, env)
+	} else if else_body, ok := stmt.else_body.?; ok {
+		return interpret(else_body^, env)
 	}
 
 	return nil, nil
@@ -126,7 +129,7 @@ interpret_block :: proc(
 	defer free(new_env)
 
 	// todo: make new env here and pass it on
-	for stmt in block_stmt {
+	for stmt in block_stmt.stmts {
 		interpret(stmt, new_env) or_return
 	}
 

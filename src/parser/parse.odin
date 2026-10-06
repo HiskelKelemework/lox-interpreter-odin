@@ -62,9 +62,12 @@ Declaration_Stmt :: struct {
 If_Stmt :: struct {
 	condition: ^Expr,
 	body:      ^Stmt,
+	else_body: Maybe(^Stmt),
 }
 
-Block_Stmt :: distinct [dynamic]Stmt
+Block_Stmt :: struct {
+	stmts: [dynamic]Stmt,
+}
 
 Stmt :: union {
 	Print_Stmt,
@@ -79,47 +82,54 @@ parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
 	iterator := TokenIterator{tokens, 0}
 
 	for !match(&iterator, .EOF) {
-		append_elem(&stmts, parse_if(&iterator))
+		append_elem(&stmts, parse_block(&iterator))
 	}
 
 	return stmts
 }
 
 parse_if :: proc(iter: ^TokenIterator) -> Stmt {
-	if match(iter, .IF) {
-		consume(iter) // consume if
-
-		if !match(iter, .LEFT_PAREN) {
-			fmt.eprint("expected opening parenthesis after if keyword")
-			os.exit(65)
-		}
-
-		consume(iter) // consume (
-
-		expr := parse_expression(iter) // the condition the if runs on
-
-		if !match(iter, .RIGHT_PAREN) {
-			fmt.eprint("expected closing parenthesis after if condition expression")
-			os.exit(65)
-		}
-		consume(iter) // consume )
-
-		if_body := parse_block(iter)
-		// need to clone and move to heap b/c if_body is a struct allocated on the stack
-		if_body_clone := new_clone(if_body)
-
-		// return a if stmt
-		return If_Stmt{expr, if_body_clone}
+	if !match(iter, .LEFT_PAREN) {
+		fmt.eprint("expected opening parenthesis after if keyword")
+		os.exit(65)
 	}
 
-	return parse_block(iter)
+	consume(iter) // consume (
+
+	expr := parse_expression(iter) // the condition the if runs on
+
+	if !match(iter, .RIGHT_PAREN) {
+		fmt.eprint("expected closing parenthesis after if condition expression")
+		os.exit(65)
+	}
+	consume(iter) // consume )
+
+	if_body := parse_block(iter)
+	// need to clone and move to heap b/c if_body is a struct allocated on the stack
+	if_body_clone := new_clone(if_body)
+
+	else_body: ^Stmt
+
+	if match(iter, .ELSE) {
+		consume(iter) // consume else
+		else_stmt := parse_block(iter)
+		else_body = new_clone(else_stmt)
+
+	}
+
+	return If_Stmt{expr, if_body_clone, else_body}
 }
 
 parse_block :: proc(iter: ^TokenIterator) -> Stmt {
+	if match(iter, .IF) {
+		consume(iter)
+		return parse_if(iter)
+	}
+
 	if match(iter, .LEFT_BRACE) {
 		consume(iter) // consume {
 
-		statements := make(Block_Stmt)
+		statements := make([dynamic]Stmt)
 
 		for !match(iter, .RIGHT_BRACE, .EOF) {
 			stmt := parse_block(iter)
@@ -132,7 +142,7 @@ parse_block :: proc(iter: ^TokenIterator) -> Stmt {
 			os.exit(65)
 		}
 
-		return statements
+		return Block_Stmt{statements}
 	}
 
 	return parse_declaration(iter)
