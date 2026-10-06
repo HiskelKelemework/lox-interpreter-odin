@@ -87,9 +87,27 @@ interpret :: proc(
 		return interpret_expr(v.expr, env)
 	case parser.Block_Stmt:
 		return interpret_block(v, env)
+	case parser.If_Stmt:
+		return interpret_if(v, env)
 	}
 
 	panic("unimplemented")
+}
+
+interpret_if :: proc(
+	stmt: parser.If_Stmt,
+	env: ^VariableStorage,
+) -> (
+	result: Literal_Value,
+	error: Maybe(Runtime_Error),
+) {
+	condition_result := interpret_expr(stmt.condition, env) or_return
+	boolean_value := literal_to_boolean(condition_result)
+	if boolean_value {
+		return interpret(stmt.body^, env)
+	}
+
+	return nil, nil
 }
 
 interpret_block :: proc(
@@ -122,7 +140,7 @@ interpret_expr :: proc(
 	Literal_Value,
 	Maybe(Runtime_Error),
 ) {
-	#partial switch &v in expr.value {
+	#partial switch &v in expr {
 	case parser.Literal_Expr:
 		return interpret_literal(&v, env)
 	case parser.Grouping_Expr:
@@ -334,6 +352,19 @@ coerce_to_boolean :: proc(
 			error = "value can't be coerced to a boolean",
 		}
 	}
+}
+
+literal_to_boolean :: proc(literal: Literal_Value) -> bool {
+	switch v in literal {
+	case f64:
+		return true
+	case bool:
+		return v
+	case string:
+		return true
+	}
+
+	panic("unknown literal value type")
 }
 
 print_string_value :: proc(value: Literal_Value) {

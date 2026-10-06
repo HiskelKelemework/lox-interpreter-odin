@@ -38,26 +38,12 @@ Assignment_Expr :: struct {
 	value:    ^Expr,
 }
 
-Expression_Kind :: enum {
-	Literal,
-	Grouping,
-	Unary,
-	Binary,
-	Variable,
-	Assignment,
-}
-
-Expression_value :: union {
+Expr :: union {
 	Literal_Expr,
 	Grouping_Expr,
 	Unary_Expr,
 	Binary_Expr,
 	Assignment_Expr,
-}
-
-Expr :: struct {
-	kind:  Expression_Kind,
-	value: Expression_value,
 }
 
 Print_Stmt :: struct {
@@ -73,6 +59,11 @@ Declaration_Stmt :: struct {
 	initializer: Maybe(^Expr),
 }
 
+If_Stmt :: struct {
+	condition: ^Expr,
+	body:      ^Stmt,
+}
+
 Block_Stmt :: distinct [dynamic]Stmt
 
 Stmt :: union {
@@ -80,6 +71,7 @@ Stmt :: union {
 	Expression_Stmt,
 	Declaration_Stmt,
 	Block_Stmt,
+	If_Stmt,
 }
 
 parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
@@ -87,10 +79,40 @@ parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
 	iterator := TokenIterator{tokens, 0}
 
 	for !match(&iterator, .EOF) {
-		append_elem(&stmts, parse_block(&iterator))
+		append_elem(&stmts, parse_if(&iterator))
 	}
 
 	return stmts
+}
+
+parse_if :: proc(iter: ^TokenIterator) -> Stmt {
+	if match(iter, .IF) {
+		consume(iter) // consume if
+
+		if !match(iter, .LEFT_PAREN) {
+			fmt.eprint("expected opening parenthesis after if keyword")
+			os.exit(65)
+		}
+
+		consume(iter) // consume (
+
+		expr := parse_expression(iter) // the condition the if runs on
+
+		if !match(iter, .RIGHT_PAREN) {
+			fmt.eprint("expected closing parenthesis after if condition expression")
+			os.exit(65)
+		}
+		consume(iter) // consume )
+
+		if_body := parse_block(iter)
+		// need to clone and move to heap b/c if_body is a struct allocated on the stack
+		if_body_clone := new_clone(if_body)
+
+		// return a if stmt
+		return If_Stmt{expr, if_body_clone}
+	}
+
+	return parse_block(iter)
 }
 
 parse_block :: proc(iter: ^TokenIterator) -> Stmt {
@@ -158,10 +180,8 @@ parse_assignment :: proc(iter: ^TokenIterator) -> ^Expr {
 		equal := consume(iter)
 		assignment := parse_assignment(iter)
 
-		expr_is_identifier := expr.kind == .Literal
-		literal_expr, ok := expr.value.(Literal_Expr)
-
-		if !ok {
+		literal_expr, expr_is_identifier := expr.(Literal_Expr)
+		if !expr_is_identifier {
 			// this is invalid
 			fmt.eprintln(
 				"expected the left hand side of an assignment operation to be a literal expression",
@@ -178,8 +198,8 @@ parse_assignment :: proc(iter: ^TokenIterator) -> ^Expr {
 		}
 
 		assignment_expr := new(Expr)
-		assignment_expr.kind = .Assignment
-		assignment_expr.value = Assignment_Expr {
+
+		assignment_expr^ = Assignment_Expr {
 			variable = literal_expr.token,
 			value    = assignment,
 		}
@@ -240,8 +260,7 @@ parse_equality :: proc(iter: ^TokenIterator) -> ^Expr {
 		right := parse_comparison(iter)
 
 		binary_expr := new(Expr)
-		binary_expr.kind = .Binary
-		binary_expr.value = Binary_Expr {
+		binary_expr^ = Binary_Expr {
 			left      = expr,
 			operation = operator,
 			right     = right,
@@ -261,8 +280,7 @@ parse_comparison :: proc(iter: ^TokenIterator) -> ^Expr {
 		right := parse_term(iter)
 
 		binary_expr := new(Expr)
-		binary_expr.kind = .Binary
-		binary_expr.value = Binary_Expr {
+		binary_expr^ = Binary_Expr {
 			left      = expr,
 			operation = operator,
 			right     = right,
@@ -282,8 +300,7 @@ parse_term :: proc(iter: ^TokenIterator) -> ^Expr {
 		right := parse_factor(iter)
 
 		binary_expr := new(Expr)
-		binary_expr.kind = .Binary
-		binary_expr.value = Binary_Expr {
+		binary_expr^ = Binary_Expr {
 			left      = expr,
 			operation = operator,
 			right     = right,
@@ -304,8 +321,7 @@ parse_factor :: proc(iter: ^TokenIterator) -> ^Expr {
 		right := parse_unary(iter)
 
 		binary_expr := new(Expr)
-		binary_expr.kind = .Binary
-		binary_expr.value = Binary_Expr {
+		binary_expr^ = Binary_Expr {
 			left      = expr,
 			operation = operator,
 			right     = right,
@@ -325,8 +341,7 @@ parse_unary :: proc(iter: ^TokenIterator) -> ^Expr {
 
 	right := parse_unary(iter)
 	expr := new(Expr)
-	expr.kind = .Unary
-	expr.value = Unary_Expr{operation, right}
+	expr^ = Unary_Expr{operation, right}
 
 	return expr
 }
@@ -339,15 +354,15 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 
 	#partial switch token.type {
 	case .TRUE:
-		expr^ = Expr{.Literal, Literal_Expr{.TRUE, token}}
+		expr^ = Literal_Expr{.TRUE, token}
 	case .FALSE:
-		expr^ = Expr{.Literal, Literal_Expr{.FALSE, token}}
+		expr^ = Literal_Expr{.FALSE, token}
 	case .NIL:
-		expr^ = Expr{.Literal, Literal_Expr{.NIL, token}}
+		expr^ = Literal_Expr{.NIL, token}
 	case .NUMBER:
-		expr^ = Expr{.Literal, Literal_Expr{.NUMBER, token}}
+		expr^ = Literal_Expr{.NUMBER, token}
 	case .STRING:
-		expr^ = Expr{.Literal, Literal_Expr{.STRING, token}}
+		expr^ = Literal_Expr{.STRING, token}
 	case .LEFT_PAREN:
 		// consume current token, parse the rest as primary again and expect a closing parenthesis
 		nested := parse_expression(iter)
@@ -359,9 +374,11 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 		}
 
 		consume(iter)
-		expr^ = Expr{.Grouping, Grouping_Expr{value = nested}}
+		expr^ = Grouping_Expr {
+			value = nested,
+		}
 	case .IDENTIFIER:
-		expr^ = Expr{.Literal, Literal_Expr{.VARIABLE, token}}
+		expr^ = Literal_Expr{.VARIABLE, token}
 	case:
 		fmt.eprintfln(
 			"[line %d] Error at '%s': Expect expression.",
@@ -376,7 +393,7 @@ parse_primary :: proc(iter: ^TokenIterator) -> ^Expr {
 }
 
 print_ast :: proc(expression: ^Expr) {
-	#partial switch v in expression.value {
+	#partial switch v in expression {
 	case Binary_Expr:
 		print_binary(v)
 	case Literal_Expr:
