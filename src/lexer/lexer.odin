@@ -287,6 +287,7 @@ format_floating_point :: proc(numeric_string: string) -> string {
 
 	return fmt.tprintf("%s.%s", parts[0], decimal_string)
 }
+
 parse_number :: proc(line: []byte, current_index: int) -> (end_index: int) {
 	assert(is_numeric(line[current_index]), "first character is not numeric")
 

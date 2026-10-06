@@ -391,3 +391,14 @@ undefined_variable_error :: proc(token: lexer.Token) -> Runtime_Error {
 	error := fmt.tprintf("Undefined vairable '%s'.", key)
 	return Runtime_Error{token.line_number, error}
 }
+
+print_literal :: proc(literal: Literal_Value) {
+	#partial switch v in literal {
+	case f64:
+		// need to do some rounding
+		formatted := lexer.format_floating_point(fmt.tprintf("%d", v))
+		fmt.println(formatted)
+	case:
+		fmt.println(v)
+	}
+}

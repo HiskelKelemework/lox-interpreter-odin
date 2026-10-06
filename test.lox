@@ -1,12 +1,17 @@
-var age = 67;
+var celsius = 92;
+var fahrenheit = 0;
+var isHot = false;
 
-var isAdult = age >= 18;
-if (isAdult) { print "eligible for voting: true"; }
-else { print "eligible for voting: false"; }
+{
+  fahrenheit = celsius * 9 / 5 + 32;
+  print celsius; print fahrenheit;
 
-if (age < 16) { print "eligible for driving: false"; }
-else if (age < 18) { print "eligible for driving: learner's permit"; }
-else { print "eligible for driving: full license"; }
+  if (celsius > 30) {
+    isHot = true;
+    print "It's a hot day. Stay hydrated!";
+  } else {
+    print "It's cold today. Wear a jacket!";
+  }
 
-if (age < 21) { print "eligible for drinking (US): false"; }
-else { print "eligible for drinking (US): true"; }
+  if (isHot) { print "Use sunscreen!"; }
+}
