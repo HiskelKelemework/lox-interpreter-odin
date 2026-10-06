@@ -263,12 +263,12 @@ parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {
 	return parse_or(iter)
 }
 
-parse_and :: proc(iter: ^TokenIterator) -> ^Expr {
-	expr := parse_or(iter)
+parse_or :: proc(iter: ^TokenIterator) -> ^Expr {
+	expr := parse_and(iter)
 
-	for match(iter, .AND) {
+	for match(iter, .OR) {
 		operator := consume(iter).?
-		right := parse_or(iter)
+		right := parse_and(iter)
 
 		binary_expr := new(Expr)
 		binary_expr^ = Binary_Expr {
@@ -283,10 +283,10 @@ parse_and :: proc(iter: ^TokenIterator) -> ^Expr {
 	return expr
 }
 
-parse_or :: proc(iter: ^TokenIterator) -> ^Expr {
+parse_and :: proc(iter: ^TokenIterator) -> ^Expr {
 	expr := parse_assignment(iter)
 
-	for match(iter, .OR) {
+	for match(iter, .AND) {
 		operator := consume(iter).?
 		right := parse_assignment(iter)
 
