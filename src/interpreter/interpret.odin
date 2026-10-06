@@ -270,6 +270,12 @@ interpret_binary :: proc(
 
 		right := interpret_expr(expr.right, env) or_return
 		return right, nil
+	case .AND:
+		left := interpret_expr(expr.left, env) or_return
+		if literal_to_boolean(left) do return left, nil
+
+		right := interpret_expr(expr.right, env) or_return
+		return right, nil
 	case:
 		panic("unimplemented binary operation")
 	}
