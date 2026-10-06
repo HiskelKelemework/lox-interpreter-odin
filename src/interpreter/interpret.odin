@@ -246,6 +246,8 @@ interpret_binary :: proc(
 		same_type := type_of(left) == type_of(right)
 		if !same_type do return true, nil
 		return left != right, nil
+	case .OR:
+		return literal_to_boolean(left) || literal_to_boolean(right), nil
 	case:
 		panic("unimplemented binary operation")
 	}
