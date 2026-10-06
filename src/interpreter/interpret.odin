@@ -204,17 +204,21 @@ interpret_binary :: proc(
 	result: Literal_Value,
 	runtime_error: Maybe(Runtime_Error),
 ) {
-	left := interpret_expr(expr.left, env) or_return
-	right := interpret_expr(expr.right, env) or_return
 
 	#partial switch expr.operation.type {
 	case .STAR:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) * right.(f64), nil
 	case .SLASH:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) / right.(f64), nil
 	case .PLUS:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		if left_string, ok := left.(string); ok {
 			if right_string, ok := right.(string); ok {
 				return fmt.tprintf("%s%s", left_string, right_string), nil
@@ -224,30 +228,48 @@ interpret_binary :: proc(
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) + right.(f64), nil
 	case .MINUS:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) - right.(f64), nil
 	case .LESS:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) < right.(f64), nil
 	case .LESS_EQUAL:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) <= right.(f64), nil
 	case .GREATER:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) > right.(f64), nil
 	case .GREATER_EQUAL:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		assert_numeric_operands(expr.operation, left, right) or_return
 		return left.(f64) >= right.(f64), nil
 	case .EQUAL_EQUAL:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		same_type := type_of(left) == type_of(right)
 		if !same_type do return false, nil
 		return left == right, nil
 	case .BANG_EQUAL:
+		left := interpret_expr(expr.left, env) or_return
+		right := interpret_expr(expr.right, env) or_return
 		same_type := type_of(left) == type_of(right)
 		if !same_type do return true, nil
 		return left != right, nil
 	case .OR:
-		return literal_to_boolean(left) || literal_to_boolean(right), nil
+		left := interpret_expr(expr.left, env) or_return
+		if literal_to_boolean(left) do return left, nil
+
+		right := interpret_expr(expr.right, env) or_return
+		return right, nil
 	case:
 		panic("unimplemented binary operation")
 	}
@@ -361,6 +383,8 @@ coerce_to_boolean :: proc(
 
 literal_to_boolean :: proc(literal: Literal_Value) -> bool {
 	switch v in literal {
+	case nil:
+		return false
 	case f64:
 		return true
 	case bool:

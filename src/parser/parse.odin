@@ -88,6 +88,35 @@ parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
 	return stmts
 }
 
+
+parse_block :: proc(iter: ^TokenIterator) -> Stmt {
+	if match(iter, .IF) {
+		consume(iter)
+		return parse_if(iter)
+	}
+
+	if match(iter, .LEFT_BRACE) {
+		consume(iter) // consume {
+
+		statements := make([dynamic]Stmt)
+
+		for !match(iter, .RIGHT_BRACE, .EOF) {
+			stmt := parse_block(iter)
+			append_elem(&statements, stmt)
+		}
+
+		closing := consume(iter).?
+		if closing.type != .RIGHT_BRACE {
+			fmt.eprintfln("[line %d] Error at end: Expect '}' .", closing.line_number)
+			os.exit(65)
+		}
+
+		return Block_Stmt{statements}
+	}
+
+	return parse_declaration(iter)
+}
+
 parse_if :: proc(iter: ^TokenIterator) -> Stmt {
 	if !match(iter, .LEFT_PAREN) {
 		fmt.eprint("expected opening parenthesis after if keyword")
@@ -118,34 +147,6 @@ parse_if :: proc(iter: ^TokenIterator) -> Stmt {
 	}
 
 	return If_Stmt{expr, if_body_clone, else_body}
-}
-
-parse_block :: proc(iter: ^TokenIterator) -> Stmt {
-	if match(iter, .IF) {
-		consume(iter)
-		return parse_if(iter)
-	}
-
-	if match(iter, .LEFT_BRACE) {
-		consume(iter) // consume {
-
-		statements := make([dynamic]Stmt)
-
-		for !match(iter, .RIGHT_BRACE, .EOF) {
-			stmt := parse_block(iter)
-			append_elem(&statements, stmt)
-		}
-
-		closing := consume(iter).?
-		if closing.type != .RIGHT_BRACE {
-			fmt.eprintfln("[line %d] Error at end: Expect '}' .", closing.line_number)
-			os.exit(65)
-		}
-
-		return Block_Stmt{statements}
-	}
-
-	return parse_declaration(iter)
 }
 
 parse_declaration :: proc(iter: ^TokenIterator) -> Stmt {
@@ -259,15 +260,15 @@ parse_statement :: proc(iter: ^TokenIterator) -> Stmt {
 }
 
 parse_expression :: proc(iter: ^TokenIterator) -> ^Expr {
-	return parse_assignment(iter)
+	return parse_or(iter)
 }
 
 parse_or :: proc(iter: ^TokenIterator) -> ^Expr {
-	expr := parse_equality(iter)
+	expr := parse_assignment(iter)
 
 	for match(iter, .OR) {
 		operator := consume(iter).?
-		right := parse_equality(iter)
+		right := parse_assignment(iter)
 
 		binary_expr := new(Expr)
 		binary_expr^ = Binary_Expr {
@@ -276,7 +277,7 @@ parse_or :: proc(iter: ^TokenIterator) -> ^Expr {
 			right     = right,
 		}
 
-		return binary_expr
+		expr = binary_expr
 	}
 
 	return expr
