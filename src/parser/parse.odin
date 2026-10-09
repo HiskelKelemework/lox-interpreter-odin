@@ -65,6 +65,11 @@ If_Stmt :: struct {
 	else_body: Maybe(^Stmt),
 }
 
+While_Stmt :: struct {
+	condition: ^Expr,
+	body:      ^Stmt,
+}
+
 Block_Stmt :: struct {
 	stmts: [dynamic]Stmt,
 }
@@ -75,6 +80,7 @@ Stmt :: union {
 	Declaration_Stmt,
 	Block_Stmt,
 	If_Stmt,
+	While_Stmt,
 }
 
 parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
@@ -93,6 +99,11 @@ parse_block :: proc(iter: ^TokenIterator) -> Stmt {
 	if match(iter, .IF) {
 		consume(iter)
 		return parse_if(iter)
+	}
+
+	if match(iter, .WHILE) {
+		consume(iter)
+		return parse_while(iter)
 	}
 
 	if match(iter, .LEFT_BRACE) {
@@ -115,6 +126,34 @@ parse_block :: proc(iter: ^TokenIterator) -> Stmt {
 	}
 
 	return parse_declaration(iter)
+}
+
+parse_while :: proc(iter: ^TokenIterator) -> Stmt {
+	if !match(iter, .LEFT_PAREN) {
+		fmt.eprint("expected opening parenthesis after while keyword")
+		os.exit(65)
+	}
+
+	consume(iter) // consume (
+
+	expr := parse_expression(iter) // the condition the if runs on
+
+	if !match(iter, .RIGHT_PAREN) {
+		fmt.eprint("expected closing parenthesis after while condition expression")
+		os.exit(65)
+	}
+	consume(iter) // consume )
+	while_body := parse_block(iter)
+	// need to clone and move to heap b/c while_body is a struct allocated on the stack
+	while_body_clone := new_clone(while_body)
+
+	while_stmt := new(Stmt)
+	while_stmt^ = While_Stmt {
+		condition = expr,
+		body      = while_body_clone,
+	}
+
+	return while_stmt^
 }
 
 parse_if :: proc(iter: ^TokenIterator) -> Stmt {

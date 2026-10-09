@@ -1,11 +1,12 @@
-var hello = "there";
+var n = 10;
+var fm = 0;
+var fn = 1;
+var index = 0;
 
-var there = "hello";
-print there;
-print hello;
-
-if (hello != there) {
-  print "they are different";
+while (index < n) {
+  print fm;
+  var temp = fm;
+  fm = fn;
+  fn = temp + fn;
+  index = index + 1;
 }
-
-

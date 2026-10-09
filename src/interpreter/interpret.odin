@@ -89,9 +89,29 @@ interpret :: proc(
 		return interpret_block(v, env)
 	case parser.If_Stmt:
 		return interpret_if(v, env)
+	case parser.While_Stmt:
+		return interpret_while(v, env)
 	}
 
 	panic("unimplemented")
+}
+
+interpret_while :: proc(
+	stmt: parser.While_Stmt,
+	env: ^VariableStorage,
+) -> (
+	result: Literal_Value,
+	error: Maybe(Runtime_Error),
+) {
+	for {
+		condition_result := interpret_expr(stmt.condition, env) or_return
+		if !literal_to_boolean(condition_result) do break
+
+		// while body loop
+		interpret(stmt.body^, env) or_return
+	}
+
+	return nil, nil
 }
 
 interpret_if :: proc(
