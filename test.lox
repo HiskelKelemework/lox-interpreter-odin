@@ -1,17 +1,22 @@
-var celsius = 47;
-var fahrenheit = 0;
-var isHot = false;
+var quz = "after";
+{
+  var quz = "before";
+
+  var quz = 0;
+  for (; quz < 1; quz = quz + 1) {
+    print quz;
+    var quz = -1;
+    print quz;
+  }
+}
 
 {
-  fahrenheit = celsius * 9 / 5 + 32;
-  print celsius; print fahrenheit;
+  for (var quz = 0; quz > 0; quz = quz + 1) {}
 
-  if (celsius > 30) {
-    isHot = true;
-    print "It's a hot day. Stay hydrated!";
-  } else {
-    print "It's cold today. Wear a jacket!";
+  var quz = "after";
+  print quz;
+
+  for (quz = 0; quz < 1; quz = quz + 1) {
+    print quz;
   }
-
-  if (isHot) { print "Use sunscreen!"; }
 }

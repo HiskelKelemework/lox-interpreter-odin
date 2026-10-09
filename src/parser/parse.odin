@@ -70,6 +70,13 @@ While_Stmt :: struct {
 	body:      ^Stmt,
 }
 
+For_Stmt :: struct {
+	initializer: Maybe(^Stmt),
+	condition:   Maybe(^Expr),
+	increment:   Maybe(^Expr),
+	body:        ^Stmt,
+}
+
 Block_Stmt :: struct {
 	stmts: [dynamic]Stmt,
 }
@@ -81,6 +88,7 @@ Stmt :: union {
 	Block_Stmt,
 	If_Stmt,
 	While_Stmt,
+	For_Stmt,
 }
 
 parse :: proc(tokens: []lexer.Token) -> [dynamic]Stmt {
@@ -104,6 +112,11 @@ parse_block :: proc(iter: ^TokenIterator) -> Stmt {
 	if match(iter, .WHILE) {
 		consume(iter)
 		return parse_while(iter)
+	}
+
+	if match(iter, .FOR) {
+		consume(iter)
+		return parse_for(iter)
 	}
 
 	if match(iter, .LEFT_BRACE) {
@@ -154,6 +167,62 @@ parse_while :: proc(iter: ^TokenIterator) -> Stmt {
 	}
 
 	return while_stmt^
+}
+
+parse_for :: proc(iter: ^TokenIterator) -> Stmt {
+	if !match(iter, .LEFT_PAREN) {
+		fmt.eprint("expected opening parenthesis after for keyword")
+		os.exit(65)
+	}
+
+	consume(iter) // consume (
+
+	initializer: ^Stmt
+	if !match(iter, .SEMICOLON) {
+		initializer = new_clone(parse_declaration(iter)) // the initializer
+	} else {
+		// got this: for (;)
+		consume(iter) // consume ;
+	}
+
+	condition: ^Expr
+	if !match(iter, .SEMICOLON) {
+		condition = parse_expression(iter) // the initializer
+
+		if consume(iter).?.type != .SEMICOLON {
+			fmt.eprintln("expected semicolon after for loop condition block")
+			os.exit(65)
+		}
+	} else {
+		// got this: for(;;)
+		consume(iter) // consume ;
+	}
+
+	increment: ^Expr
+	if !match(iter, .RIGHT_PAREN) {
+		increment = parse_assignment(iter) // the initializer
+
+		if consume(iter).?.type != .RIGHT_PAREN {
+			fmt.eprintln("expected closing parenthesis after for loop increment block")
+			os.exit(65)
+		}
+	} else {
+		consume(iter) // consume )
+	}
+
+	for_body := parse_block(iter)
+	// need to clone and move to heap b/c for_body is a struct allocated on the stack
+	for_body_clone := new_clone(for_body)
+
+	for_stmt := new(Stmt)
+	for_stmt^ = For_Stmt {
+		initializer = initializer,
+		condition   = condition,
+		increment   = increment,
+		body        = for_body_clone,
+	}
+
+	return for_stmt^
 }
 
 parse_if :: proc(iter: ^TokenIterator) -> Stmt {
