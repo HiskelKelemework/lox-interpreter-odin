@@ -81,11 +81,8 @@ main :: proc() {
 	}
 
 	env := new(interpreter.VariableStorage)
-	storage := make(map[string]interpreter.Literal_Value)
-	env.storage = &storage
-
-	defer delete(storage)
-	defer free(env)
+	interpreter.init_var_storage(env, nil)
+	defer interpreter.destroy_var_storage(env)
 
 	if command == "evaluate" {
 		for stmt in stmts {

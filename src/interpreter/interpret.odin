@@ -21,7 +21,7 @@ Runtime_Error :: struct {
 
 VariableStorage :: struct {
 	enclosing: ^VariableStorage,
-	storage:   ^map[string]Literal_Value,
+	storage:   map[string]Literal_Value,
 }
 
 create_var_value :: proc(storage: ^VariableStorage, key: string, value: Literal_Value) {
@@ -113,6 +113,17 @@ interpret_if :: proc(
 	return nil, nil
 }
 
+init_var_storage :: proc(storage, enclosing: ^VariableStorage) {
+	new_storage := make(map[string]Literal_Value)
+	storage.storage = new_storage
+	storage.enclosing = enclosing
+}
+
+destroy_var_storage :: proc(storage: ^VariableStorage) {
+	delete(storage.storage)
+	free(storage)
+}
+
 interpret_block :: proc(
 	block_stmt: parser.Block_Stmt,
 	env: ^VariableStorage,
@@ -121,14 +132,9 @@ interpret_block :: proc(
 	error: Maybe(Runtime_Error),
 ) {
 	new_env := new(VariableStorage)
-	new_storage := make(map[string]Literal_Value)
-	new_env.storage = &new_storage
-	new_env.enclosing = env
+	init_var_storage(new_env, env)
+	defer destroy_var_storage(new_env)
 
-	defer delete(new_storage)
-	defer free(new_env)
-
-	// todo: make new env here and pass it on
 	for stmt in block_stmt.stmts {
 		interpret(stmt, new_env) or_return
 	}
